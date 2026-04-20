@@ -54,7 +54,7 @@
         <h1>HEAVENLY INFERNO <span style="color:var(--accent)">ANALYZER</span></h1>
         <div class="controls">
             <label for="iterInput">Iterations</label>
-            <input id="iterInput" type="number" value="100000">
+            <input id="iterInput" type="number" value="1000000">
             <button id="runBtn">INITIATE ENGINE</button>
         </div>
     </div>
@@ -163,9 +163,13 @@
   };
 
   const runBtn = document.getElementById('runBtn');
-  const workerUrl = URL.createObjectURL(new Blob([document.getElementById('worker-logic').textContent], {type: 'application/javascript'}));
+
+  let workerUrl = null;
 
   runBtn.onclick = () => {
+    if (workerUrl) URL.revokeObjectURL(workerUrl);
+    workerUrl = URL.createObjectURL(new Blob([document.getElementById('worker-logic').textContent], {type: 'application/javascript'}));
+
     const total = parseInt(document.getElementById('iterInput').value);
     const cores = navigator.hardwareConcurrency || 4;
     const itersPer = Math.floor(total / cores);
@@ -200,7 +204,18 @@
           if (finished === cores) render(aggTurns, aggColors, total);
         }
       };
-    }
+
+      w.onerror = (err) => {
+        console.error(`Worker ${i} failed:`, err.message);
+        finished++;
+        document.getElementById(`pb-${i}`).style.width = '100%';
+        document.getElementById(`pb-${i}`).style.background = '#ff3131';
+        w.terminate();
+        if (finished === cores) {
+          if (aggTurns.some(v => v > 0)) render(aggTurns, aggColors, total);
+          else { runBtn.disabled = false; }
+        }
+      };    }
   };
 
   function render(turns, colors, total) {
@@ -224,20 +239,22 @@
     });
 
     const chart = document.getElementById('turnChart');
+    const fragment = document.createDocumentFragment();
     for(let t=1; t<=8; t++) {
       const pct = (turns[t]/total)*100;
-      chart.innerHTML += `
-        <div class="turn-row">
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem">
-                <span>TURN ${t}</span><span>${pct.toFixed(1)}%</span>
-            </div>
-            <div class="bar-outer">
-                <!--suppress CssInvalidHtmlTagReference -->
-                <div class="bar-inner" style="width:${pct}%"></div>
-            </div>
+      const div = document.createElement('div');
+      div.className = 'turn-row';
+      div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem">
+            <span>TURN ${t}</span><span>${pct.toFixed(1)}%</span>
+        </div>
+        <div class="bar-outer">
+            <!--suppress CssInvalidHtmlTagReference -->
+            <div class="bar-inner" style="width:${pct}%"></div>
         </div>`;
+      fragment.appendChild(div);
     }
-  }
+    chart.appendChild(fragment);  }
 </script>
 </body>
 </html>

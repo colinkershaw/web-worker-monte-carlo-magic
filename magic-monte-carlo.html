@@ -1,69 +1,61 @@
 <!DOCTYPE html>
+<!--suppress SpellCheckingInspection -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Heavenly Inferno: Mana Velocity Dashboard</title>
+    <!--suppress CssRedundantUnit -->
     <style>
         :root {
-            --accent: #00d2ff; --any: #94a3b8; --white: #f8fafc;
-            --black: #1e293b; --red: #ef4444; --bg: #0f172a; --card: #1e293b;
+            --accent: #00e5ff; --any: #94a3b8; --white: #ffffff;
+            --black: #000000; --red: #ff3131; --bg: #0f172a; --card: #1e293b;
         }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: #f1f5f9; padding: 2rem; }
         .container { max-width: 1200px; margin: 0 auto; }
-
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .controls { display: flex; gap: 1rem; background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid #334155; }
-        input { background: #0f172a; border: 1px solid #475569; color: white; padding: 10px; border-radius: 6px; width: 120px; }
-        button { background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); color: white; border: none; padding: 10px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .controls { display: flex; gap: 1rem; background: var(--card); padding: 1rem; border-radius: 12px; border: 1px solid #334155; }
+        input { background: #0f172a; border: 1px solid #475569; color: white; padding: 8px; border-radius: 6px; width: 100px; }
+        button { background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
         /* Multi-Thread Visuals */
-        #workerContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 2rem; }
-        .worker-row { background: var(--card); padding: 12px; border-radius: 8px; border: 1px solid #334155; }
-        .thread-label { font-size: 0.75rem; color: var(--accent); margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .mini-progress { height: 6px; background: #0f172a; border-radius: 3px; overflow: hidden; }
-        .mini-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; box-shadow: 0 0 10px var(--accent); }
+        #workerContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 2rem; }
+        .worker-row { background: var(--card); padding: 10px; border-radius: 8px; border: 1px solid #334155; font-size: 0.7rem; }
+        .mini-progress { height: 4px; background: #0f172a; border-radius: 2px; overflow: hidden; margin-top: 5px; }
+        .mini-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; box-shadow: 0 0 8px var(--accent); }
 
-        .main-grid { display: grid; grid-template-columns: 350px 1fr; gap: 2rem; }
+        .main-grid { display: grid; grid-template-columns: 400px 1fr; gap: 2rem; }
+        .kaalia-card { background: var(--card); padding: 2rem; border-radius: 16px; border: 1px solid #334155; text-align: center; position: relative; }
 
-        /* The Mana Wheel Card */
-        .kaalia-card { background: var(--card); padding: 2rem; border-radius: 16px; border: 1px solid #334155; text-align: center; }
-        .wheel-container { position: relative; width: 220px; height: 220px; margin: 0 auto; }
-        #manaWheel {
-            width: 100%; height: 100%; border-radius: 50%;
-            background: conic-gradient(
-                    var(--any) 0% 25%,
-                    var(--white) 25% 50%,
-                    var(--black) 50% 75%,
-                    var(--red) 75% 100%
-            );
-            mask: radial-gradient(transparent 55%, black 56%);
-            -webkit-mask: radial-gradient(transparent 55%, black 56%);
-            filter: grayscale(1) opacity(0.2);
-            transition: filter 0.5s ease;
-        }
-        .wheel-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .t4-label { font-size: 2.5rem; font-weight: 900; color: var(--accent); }
+        /* Synchronized SVG Wheel Styles */
+        .wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto; }
+        .wheel-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .slice-bg { fill: rgba(255, 255, 255, 0.05); stroke: #334155; stroke-width: 0.5; }
+        .slice-fill { transition: d 0.5s ease-out; opacity: 0.9; }
+        .slice-outline { fill: none; stroke-width: 2; }
 
-        /* Turn Probability Chart */
+        .wheel-labels { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .label { position: absolute; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; transform: translate(-50%, -50%); }
+        .label-pct { display: block; color: var(--accent); font-size: 1.1rem; }
+
+        .t4-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+        .t4-val { font-size: 1.8rem; font-weight: 900; color: var(--accent); text-shadow: 0 0 15px rgba(0,229,255,0.4); }
+
         .chart-section { background: var(--card); padding: 2rem; border-radius: 16px; border: 1px solid #334155; }
-        .turn-row { margin-bottom: 1.5rem; }
-        .turn-meta { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; }
-        .bar-outer { background: #0f172a; height: 24px; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }
-        .bar-inner { height: 100%; background: linear-gradient(90deg, #3a7bd5, #00d2ff); width: 0%; transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .turn-row { margin-bottom: 1.2rem; }
+        .bar-outer { background: #0f172a; height: 30px; border-radius: 15px; overflow: hidden; border: 1px solid #334155; }
+        .bar-inner { height: 100%; background: linear-gradient(90deg, #3a7bd5, #00e5ff); width: 0%; transition: width 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>Heavenly Inferno <span style="color:var(--accent)">Engine</span></h1>
+        <h1>HEAVENLY INFERNO <span style="color:var(--accent)">ANALYZER</span></h1>
         <div class="controls">
-            <div style="display:flex; flex-direction:column; gap:4px">
-                <label style="font-size:0.7rem; color:#94a3b8">SIMULATION ITERATIONS</label>
-                <input id="iterInput" type="number" value="100000">
-            </div>
-            <button id="runBtn">RECALCULATE VELOCITY</button>
+            <label for="iterInput">Iterations</label>
+            <input id="iterInput" type="number" value="100000">
+            <button id="runBtn">INITIATE ENGINE</button>
         </div>
     </div>
 
@@ -71,19 +63,40 @@
 
     <div class="main-grid">
         <div class="kaalia-card">
-            <h3 style="margin-top:0">T4 Requirement</h3>
             <div class="wheel-container">
-                <div id="manaWheel"></div>
-                <div class="wheel-overlay">
-                    <div id="resSuccess" class="t4-label">--%</div>
-                    <div style="font-size:0.8rem; color:#94a3b8">RELIABILITY</div>
+                <svg class="wheel-svg" viewBox="0 0 100 100">
+                    <path id="bg-w" class="slice-bg"  d=""/>
+                    <path id="fill-w" class="slice-fill" fill="var(--white)"  d=""/>
+                    <path id="out-w" class="slice-outline" stroke="var(--white)"  d=""/>
+                    <path id="bg-r" class="slice-bg"  d=""/>
+                    <path id="fill-r" class="slice-fill" fill="var(--red)"  d=""/>
+                    <path id="out-r" class="slice-outline" stroke="var(--red)"  d=""/>
+                    <path id="bg-b" class="slice-bg"  d=""/>
+                    <path id="fill-b" class="slice-fill" fill="var(--black)"  d=""/>
+                    <path id="out-b" class="slice-outline" stroke="var(--black)"  d=""/>
+                    <path id="bg-any" class="slice-bg"  d=""/>
+                    <path id="fill-any" class="slice-fill" fill="var(--any)"  d=""/>
+                    <path id="out-any" class="slice-outline" stroke="var(--any)"  d=""/>
+                </svg>
+
+                <div class="wheel-labels">
+                    <!--suppress CssRedundantUnit -->
+                    <div class="label" style="top: 0%; left: 10%;">White <span id="pct-w" class="label-pct">0%</span></div>
+                    <!--suppress CssRedundantUnit -->
+                    <div class="label" style="top: 0%; left: 90%;">Red <span id="pct-r" class="label-pct">0%</span></div>
+                    <div class="label" style="top: 100%; left: 90%;">Black <span id="pct-b" class="label-pct">0%</span></div>
+                    <div class="label" style="top: 100%; left: 10%;">Any <span id="pct-any" class="label-pct">0%</span></div>
+                </div>
+
+                <div class="t4-center">
+                    <div id="resSuccess" class="t4-val">--%</div>
+                    <div style="font-size:0.6rem; letter-spacing:1px; color:#94a3b8">T4 TOTAL</div>
                 </div>
             </div>
-            <p style="font-size:0.9rem; margin-top:2rem; color:#94a3b8">The wheel saturates as specific color requirements are met across simulations.</p>
         </div>
 
         <div class="chart-section">
-            <h3 style="margin-top:0">Cumulative Casting Probability</h3>
+            <h3 style="margin-top:0; color:var(--accent)">CASTING VELOCITY BY TURN</h3>
             <div id="turnChart"></div>
         </div>
     </div>
@@ -109,10 +122,8 @@
                     landsOnBoard++;
                     land.produces.forEach(c => colors.add(c));
                 }
-
                 if (colors.has('R') && colors.has('W') && colors.has('B') && landsOnBoard >= 4) {
                     for (let later = t; later <= 8; later++) turnSuccesses[later]++;
-                    if (t === 4) { colorHitsAtT4.Any++; colorHitsAtT4.W++; colorHitsAtT4.B++; colorHitsAtT4.R++; }
                     break;
                 }
                 if (t === 4) {
@@ -124,17 +135,29 @@
             }
             if (i % Math.floor(iterations / 20) === 0) self.postMessage({ type: 'progress', percent: (i/iterations)*100 });
         }
-        self.postMessage({ type: 'result', turnSuccesses, colorHitsAtT4, total: iterations });
+        self.postMessage({ type: 'result', turnSuccesses, colorHitsAtT4 });
     };
 </script>
 
 <script>
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = (angleDeg * Math.PI) / 180.0;
+    return { x: cx + (r * Math.cos(rad)), y: cy + (r * Math.sin(rad)) };
+  }
+
+  function describeArc(x, y, r, startAngle, endAngle) {
+    if (r <= 0) return ""; // Handle 0% cases cleanly
+    const start = polarToCartesian(x, y, r, endAngle);
+    const end = polarToCartesian(x, y, r, startAngle);
+    return ["M", x, y, "L", start.x, start.y, "A", r, r, 0, 0, 0, end.x, end.y, "L", x, y, "Z"].join(" ");
+  }
+
   const createDeck = () => {
     const deck = [];
     const add = (n, c, col) => { for(let i=0; i<c; i++) deck.push({name:n, types:['Land'], produces:col}); };
     add('Plains', 8, ['W']); add('Swamp', 8, ['B']); add('Mountain', 8, ['R']);
     add('Tower', 1, ['R', 'W', 'B']); add('Spire', 1, ['R', 'W', 'B']);
-    add('Duals', 12, ['R', 'W', 'B']); // Simplified for brevity but kept distinct
+    add('Duals', 10, ['R', 'W', 'B']);
     while(deck.length < 99) deck.push({name:'Spell', types:['Spell'], produces:[]});
     return deck;
   };
@@ -157,7 +180,7 @@
     for (let i = 0; i < cores; i++) {
       const div = document.createElement('div');
       div.className = 'worker-row';
-      div.innerHTML = `<div class="thread-label">CORE ${i+1} <span id="pt-${i}">0%</span></div><div class="mini-progress"><div id="pb-${i}" class="mini-fill"></div></div>`;
+      div.innerHTML = `THREAD ${i+1}<div class="mini-progress"><div id="pb-${i}" class="mini-fill"></div></div>`;
       document.getElementById('workerContainer').appendChild(div);
 
       const w = new Worker(workerUrl);
@@ -165,15 +188,13 @@
       w.postMessage({ iterations: iters, deckList: createDeck() });
 
       w.onmessage = (e) => {
-        if (e.data.type === 'progress') {
-          document.getElementById(`pb-${i}`).style.width = e.data.percent + '%';
-          document.getElementById(`pt-${i}`).innerText = Math.round(e.data.percent) + '%';
-        }
+        if (e.data.type === 'progress') document.getElementById(`pb-${i}`).style.width = e.data.percent + '%';
         if (e.data.type === 'result') {
           finished++;
-          document.getElementById(`pb-${i}`).style.width = '100%'; // Forced complete
-          document.getElementById(`pt-${i}`).innerText = '100%';
+          document.getElementById(`pb-${i}`).style.width = '100%';
+          // noinspection JSUnresolvedReference
           e.data.turnSuccesses.forEach((val, idx) => aggTurns[idx] += val);
+          // noinspection JSUnresolvedReference
           Object.keys(aggColors).forEach(k => aggColors[k] += e.data.colorHitsAtT4[k]);
           w.terminate();
           if (finished === cores) render(aggTurns, aggColors, total);
@@ -184,21 +205,37 @@
 
   function render(turns, colors, total) {
     runBtn.disabled = false;
-    const t4Pct = (turns[4]/total)*100;
-    document.getElementById('resSuccess').innerText = t4Pct.toFixed(1) + '%';
+    document.getElementById('resSuccess').innerText = ((turns[4]/total)*100).toFixed(1) + '%';
 
-    // Update Wheel SATURATION (using grayscale filter for fill effect)
-    const avgSat = ((colors.W + colors.B + colors.R + colors.Any) / (total * 4));
-    document.getElementById('manaWheel').style.filter = `grayscale(${1 - avgSat}) opacity(${0.2 + (avgSat * 0.8)})`;
+    const configs = [
+      { key: 'W', id: 'w', start: 180, end: 270 },
+      { key: 'R', id: 'r', start: 270, end: 360 },
+      { key: 'B', id: 'b', start: 0, end: 90 },
+      { key: 'Any', id: 'any', start: 90, end: 180 }
+    ];
+
+    configs.forEach(c => {
+      const pct = (colors[c.key] / total) * 100;
+      const rFill = 45 * (pct / 100);
+      document.getElementById(`bg-${c.id}`).setAttribute("d", describeArc(50, 50, 45, c.start, c.end));
+      document.getElementById(`out-${c.id}`).setAttribute("d", describeArc(50, 50, 45, c.start, c.end));
+      document.getElementById(`fill-${c.id}`).setAttribute("d", describeArc(50, 50, rFill, c.start, c.end));
+      document.getElementById(`pct-${c.id}`).innerText = pct.toFixed(1) + '%';
+    });
 
     const chart = document.getElementById('turnChart');
     for(let t=1; t<=8; t++) {
       const pct = (turns[t]/total)*100;
       chart.innerHTML += `
-                <div class="turn-row">
-                    <div class="turn-meta"><span>TURN ${t}</span><span>${pct.toFixed(1)}%</span></div>
-                    <div class="bar-outer"><div class="bar-inner" style="width:${pct}%"></div></div>
-                </div>`;
+        <div class="turn-row">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem">
+                <span>TURN ${t}</span><span>${pct.toFixed(1)}%</span>
+            </div>
+            <div class="bar-outer">
+                <!--suppress CssInvalidHtmlTagReference -->
+                <div class="bar-inner" style="width:${pct}%"></div>
+            </div>
+        </div>`;
     }
   }
 </script>

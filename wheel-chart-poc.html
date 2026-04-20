@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!--suppress CssRedundantUnit -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -41,17 +42,17 @@
 <div class="kaalia-card">
     <div class="wheel-container">
         <svg viewBox="0 0 100 100">
-            <path id="bg-w" class="slice-bg" /><path id="fill-w" class="slice-fill" fill="var(--white)" /><path id="out-w" class="slice-outline" stroke="var(--white)" />
-            <path id="bg-r" class="slice-bg" /><path id="fill-r" class="slice-fill" fill="var(--red)" /><path id="out-r" class="slice-outline" stroke="var(--red)" />
-            <path id="bg-any" class="slice-bg" /><path id="fill-any" class="slice-fill" fill="var(--any)" /><path id="out-any" class="slice-outline" stroke="var(--any)" />
-            <path id="bg-b" class="slice-bg" /><path id="fill-b" class="slice-fill" fill="var(--black)" /><path id="out-b" class="slice-outline" stroke="var(--black)" />
+            <path id="bg-w" class="slice-bg"  d=""/><path id="fill-w" class="slice-fill" fill="var(--white)"  d=""/><path id="out-w" class="slice-outline" stroke="var(--white)"  d=""/>
+            <path id="bg-r" class="slice-bg"  d=""/><path id="fill-r" class="slice-fill" fill="var(--red)"  d=""/><path id="out-r" class="slice-outline" stroke="var(--red)"  d=""/>
+            <path id="bg-any" class="slice-bg"  d=""/><path id="fill-any" class="slice-fill" fill="var(--any)"  d=""/><path id="out-any" class="slice-outline" stroke="var(--any)"  d=""/>
+            <path id="bg-b" class="slice-bg"  d=""/><path id="fill-b" class="slice-fill" fill="var(--black)"  d=""/><path id="out-b" class="slice-outline" stroke="var(--black)"  d=""/>
         </svg>
 
         <div class="labels">
-            <div class="label" style="top: 20%; left: 20%;">Black <b id="val-w">0%</b></div>
-            <div class="label" style="top: 20%; left: 80%;">Any <b id="val-r">0%</b></div>
-            <div class="label" style="top: 80%; left: 80%;">White <b id="val-b">0%</b></div>
-            <div class="label" style="top: 80%; left: 20%;">Red <b id="val-any">0%</b></div>
+            <div class="label" style="top: 0%; left: 10%;">Black <b id="val-w">0%</b></div>
+            <div class="label" style="top: 0%; left: 90%;">Any <b id="val-r">0%</b></div>
+            <div class="label" style="top: 100%; left: 90%;">White <b id="val-b">0%</b></div>
+            <div class="label" style="top: 100%; left: 10%;">Red <b id="val-any">0%</b></div>
         </div>
     </div>
     <button onclick="randomize()">Randomize Inputs</button>

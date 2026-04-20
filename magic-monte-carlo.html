@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heavenly Inferno: Monte Carlo Simulator</title>
+    <title>Heavenly Inferno: Monte Carlo Multi-Core Simulator</title>
     <style>
         :root { --primary: #722f37; --bg: #fdfaf6; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: #333; padding: 2rem; line-height: 1.6; }
@@ -28,8 +28,8 @@
 
     <div class="controls">
         <div class="input-group">
-            <label for="iterInput">Total Iterations</label>
-            <input id="iterInput" type="number" value="100000">
+            <label>Total Iterations</label>
+            <input id="iterInput" type="number" value="1000000">
         </div>
         <button id="runBtn">Start Simulation</button>
     </div>
@@ -110,7 +110,7 @@
             if (result.success) successes++;
             totalLands += result.landCount;
 
-            if (i % (iterations / 10) === 0) {
+            if (i % Math.max(1, Math.floor(iterations / 10)) === 0) {
                 self.postMessage({ type: 'progress', percent: (i / iterations) * 100 });
             }
         }
@@ -167,27 +167,49 @@
   const workerUrl = URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'}));
 
   runBtn.onclick = () => {
-    const iterations = parseInt(document.getElementById('iterInput').value);
-    const worker = new Worker(workerUrl);
+    const totalIterations = parseInt(document.getElementById('iterInput').value);
+    const numWorkers = navigator.hardwareConcurrency || 4;
+    const iterationsPerWorker = Math.floor(totalIterations / numWorkers);
+
+    let workersFinished = 0;
+    let aggregateSuccessRate = 0;
+    let aggregateAvgLands = 0;
+    const workerProgress = new Array(numWorkers).fill(0);
 
     runBtn.disabled = true;
-    status.innerText = "Simulating games...";
+    status.innerText = `Simulating on ${numWorkers} cores...`;
 
-    worker.postMessage({ iterations, deckList: createDeck() });
+    for (let i = 0; i < numWorkers; i++) {
+      const worker = new Worker(workerUrl);
+      const iters = (i === numWorkers - 1)
+        ? totalIterations - (iterationsPerWorker * (numWorkers - 1))
+        : iterationsPerWorker;
 
-    worker.onmessage = (e) => {
-      if (e.data.type === 'progress') {
-        fill.style.width = `${e.data.percent}%`;
-      } else if (e.data.type === 'result') {
-        document.getElementById('resSuccess').innerText = e.data.successRate.toFixed(2) + '%';
-        document.getElementById('resLands').innerText = e.data.avgLands.toFixed(2);
-        status.innerText = "Complete.";
-        runBtn.disabled = false;
-        worker.terminate();
-      }
-    };
+      worker.postMessage({ iterations: iters, deckList: createDeck() });
+
+      worker.onmessage = (e) => {
+        if (e.data.type === 'progress') {
+          workerProgress[i] = e.data.percent;
+          const totalPercent = workerProgress.reduce((a, b) => a + b, 0) / numWorkers;
+          fill.style.width = `${totalPercent}%`;
+        } else if (e.data.type === 'result') {
+          workersFinished++;
+          // Weight the results based on actual work done by this worker
+          aggregateSuccessRate += (e.data.successRate * (iters / totalIterations));
+          aggregateAvgLands += (e.data.avgLands * (iters / totalIterations));
+
+          worker.terminate();
+
+          if (workersFinished === numWorkers) {
+            document.getElementById('resSuccess').innerText = aggregateSuccessRate.toFixed(2) + '%';
+            document.getElementById('resLands').innerText = aggregateAvgLands.toFixed(2);
+            status.innerText = `Complete (via ${numWorkers} workers).`;
+            runBtn.disabled = false;
+          }
+        }
+      };
+    }
   };
 </script>
-
 </body>
 </html>

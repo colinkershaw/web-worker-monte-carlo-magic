@@ -41,7 +41,8 @@
         .t4-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
         .t4-val { font-size: 1.8rem; font-weight: 900; color: var(--accent); text-shadow: 0 0 15px rgba(0,229,255,0.4); }
 
-        .chart-section { background: var(--card); padding: 2rem; border-radius: 16px; border: 1px solid #334155; }
+        .chart-section, chart-section-failure { background: var(--card); padding: 2rem; border-radius: 16px; border: 1px solid #334155; }
+        /*.chart-section-failure {border-radius: 10px}*/
         .turn-row { margin-bottom: 1.2rem; }
         .bar-outer { background: #0f172a; height: 30px; border-radius: 15px; overflow: hidden; border: 1px solid #334155; }
         .bar-inner { height: 100%; background: linear-gradient(90deg, #3a7bd5, #00e5ff); width: 0%; transition: width 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
@@ -90,16 +91,18 @@
 
                 <div class="t4-center">
                     <div id="resSuccess" class="t4-val">--%</div>
-                    <div style="font-size:0.6rem; letter-spacing:1px; color:#94a3b8">T4 TOTAL</div>
+                    <div style="font-size:0.8rem; letter-spacing:1px; color:#2ae3f3">T4 TOTAL</div>
                 </div>
+            </div>
+            <div class="chart-section-failure">
+                <h3 style="margin-top:2rem; color:#ff3131">FAILURE ATTRIBUTION (T4)</h3>
+                <div id="failureWaterfall"></div>
             </div>
         </div>
 
         <div class="chart-section">
             <h3 style="margin-top:0; color:var(--accent)">CASTING VELOCITY BY TURN</h3>
             <div id="turnChart"></div>
-            <h3 style="margin-top:2rem; color:#ff3131">FAILURE ATTRIBUTION (T4)</h3>
-            <div id="failureWaterfall"></div>
         </div>
     </div>
 </div>
@@ -233,7 +236,7 @@
           e.data.turnSuccesses.forEach((val, idx) => aggTurns[idx] += val);
           // noinspection JSUnresolvedReference
           Object.keys(aggColors).forEach(k => aggColors[k] += e.data.colorHitsAtT4[k]);
-          // NEW: Sum up failure reasons from this thread
+          // noinspection JSUnresolvedReference
           Object.keys(aggFail).forEach(k => aggFail[k] += e.data.failReasons[k]);
 
           w.terminate();

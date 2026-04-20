@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Synchronized Mana Wheel POC</title>
+    <style>
+        :root {
+            --bg: #0f172a; --card: #1e293b; --accent: #00e5ff;
+            --white: #ffffff; --red: #ff3131; --black: #000000; --any: #94a3b8;
+        }
+        body {
+            background: var(--bg); color: white; font-family: sans-serif;
+            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;
+        }
+        .kaalia-card {
+            background: var(--card); padding: 3rem; border-radius: 24px;
+            text-align: center; width: 400px; border: 1px solid #334155;
+        }
+        .wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto; }
+        svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+
+        .slice-bg { fill: rgba(255, 255, 255, 0.05); stroke: #334155; stroke-width: 0.5; }
+        .slice-fill { transition: d 0.5s ease-out; opacity: 0.9; }
+        .slice-outline { fill: none; stroke-width: 2; }
+
+        .labels { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .label {
+            position: absolute; font-size: 0.75rem; font-weight: 800;
+            text-transform: uppercase; transform: translate(-50%, -50%);
+        }
+        .label b { display: block; color: var(--accent); font-size: 1.1rem; }
+
+        button {
+            margin-top: 2rem; background: var(--accent); color: var(--bg);
+            border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="kaalia-card">
+    <div class="wheel-container">
+        <svg viewBox="0 0 100 100">
+            <path id="bg-w" class="slice-bg" /><path id="fill-w" class="slice-fill" fill="var(--white)" /><path id="out-w" class="slice-outline" stroke="var(--white)" />
+            <path id="bg-r" class="slice-bg" /><path id="fill-r" class="slice-fill" fill="var(--red)" /><path id="out-r" class="slice-outline" stroke="var(--red)" />
+            <path id="bg-any" class="slice-bg" /><path id="fill-any" class="slice-fill" fill="var(--any)" /><path id="out-any" class="slice-outline" stroke="var(--any)" />
+            <path id="bg-b" class="slice-bg" /><path id="fill-b" class="slice-fill" fill="var(--black)" /><path id="out-b" class="slice-outline" stroke="var(--black)" />
+        </svg>
+
+        <div class="labels">
+            <div class="label" style="top: 20%; left: 20%;">Black <b id="val-w">0%</b></div>
+            <div class="label" style="top: 20%; left: 80%;">Any <b id="val-r">0%</b></div>
+            <div class="label" style="top: 80%; left: 80%;">White <b id="val-b">0%</b></div>
+            <div class="label" style="top: 80%; left: 20%;">Red <b id="val-any">0%</b></div>
+        </div>
+    </div>
+    <button onclick="randomize()">Randomize Inputs</button>
+</div>
+
+<script>
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = (angleDeg * Math.PI) / 180.0;
+    return { x: cx + (r * Math.cos(rad)), y: cy + (r * Math.sin(rad)) };
+  }
+
+  function describeArc(x, y, r, startAngle, endAngle) {
+    const start = polarToCartesian(x, y, r, endAngle);
+    const end = polarToCartesian(x, y, r, startAngle);
+    return ["M", x, y, "L", start.x, start.y, "A", r, r, 0, 0, 0, end.x, end.y, "L", x, y, "Z"].join(" ");
+  }
+
+  function updateWheel(stats) {
+    const configs = [
+      { id: 'r', start: 180, end: 270 }, // Top-Left
+      { id: 'b', start: 270, end: 360 }, // Top-Right
+      { id: 'any', start: 0, end: 90 },    // Bottom-Right
+      { id: 'w', start: 90, end: 180 } // Bottom-Left
+    ];
+
+    configs.forEach(c => {
+      const rFill = 45 * (stats[c.id] / 100);
+      document.getElementById(`bg-${c.id}`).setAttribute("d", describeArc(50, 50, 45, c.start, c.end));
+      document.getElementById(`out-${c.id}`).setAttribute("d", describeArc(50, 50, 45, c.start, c.end));
+      document.getElementById(`fill-${c.id}`).setAttribute("d", describeArc(50, 50, rFill, c.start, c.end));
+      document.getElementById(`val-${c.id}`).innerText = stats[c.id].toFixed(1) + "%";
+    });
+  }
+
+  function randomize() {
+    updateWheel({ w: Math.random()*100, r: Math.random()*100, b: Math.random()*100, any: Math.random()*100 });
+  }
+  randomize();
+</script>
+</body>
+</html>

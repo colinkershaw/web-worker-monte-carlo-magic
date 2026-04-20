@@ -54,7 +54,7 @@
         <h1>HEAVENLY INFERNO <span style="color:var(--accent)">ANALYZER</span></h1>
         <div class="controls">
             <label for="iterInput">Iterations</label>
-            <input id="iterInput" type="number" value="1000000">
+            <input id="iterInput" type="number" value="10000000">
             <button id="runBtn">INITIATE ENGINE</button>
         </div>
     </div>
@@ -108,8 +108,19 @@
         let turnSuccesses = Array(9).fill(0);
         let colorHitsAtT4 = { W:0, B:0, R:0, Any:0 };
 
+        /**
+         * Fisher-Yates shuffle logic for improved performance and accuracy.
+         */
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
         for (let i = 1; i <= iterations; i++) {
-            let deck = [...deckList].sort(() => Math.random() - 0.5);
+            let deck = shuffle([...deckList]);
             let hand = deck.splice(0, 7);
             let colors = new Set();
             let landsOnBoard = 0;

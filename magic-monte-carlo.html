@@ -3,257 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heavenly Inferno: Monte Carlo Multi-Core Simulator</title>
+    <title>Heavenly Inferno: Deep Analytics</title>
     <style>
         :root { --primary: #722f37; --bg: #fdfaf6; --w: #f0f2f0; --b: #2b2b2b; --r: #d32f2f; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #333; padding: 2rem; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #333; padding: 1.5rem; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .controls { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: flex-end; background: #eee; padding: 1rem; border-radius: 8px; }
+        #workerContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 1.5rem; }
+        .worker-row { background: #f8f9fa; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.7rem; }
+        .mini-fill { height: 4px; background: var(--primary); width: 0%; transition: width 0.1s; }
 
-        .controls { display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-end; background: #eee; padding: 1rem; border-radius: 8px; }
-        .input-group { display: flex; flex-direction: column; font-weight: bold; }
-        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 150px; }
-        button { background: var(--primary); color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .dashboard { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; }
 
-        /* Worker Grid */
-        #workerContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 2rem; }
-        .worker-row { background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.8rem; }
-        .mini-progress { width: 100%; height: 6px; background: #ddd; border-radius: 3px; margin-top: 5px; overflow: hidden; }
-        .mini-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.1s; }
+        /* Mana Wheel */
+        .kaalia-card { background: #e0d1b8; padding: 20px; border-radius: 10px; text-align: center; border: 8px solid #333; }
+        .mana-wheel { width: 150px; height: 150px; border-radius: 50%; margin: 0 auto; position: relative; background: #ccc; overflow: hidden; border: 4px solid #333; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .slice { width: 100%; height: 100%; opacity: 0.3; transition: opacity 0.5s; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
+        .active { opacity: 1; }
+        .any { background: #999; } .white { background: #fdfdfd; color: #333; } .black { background: #333; } .red { background: #a30000; }
 
-        /* Stats & Charts */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-        .stat-card { background: #f8f9fa; padding: 1.5rem; border-left: 5px solid var(--primary); border-radius: 4px; }
-
-        .chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .bar-container { flex-grow: 1; height: 20px; background: #eee; border-radius: 10px; overflow: hidden; }
-        .bar-fill { height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; color: white; font-size: 0.7rem; font-weight: bold; }
-
-        .color-w { background: #d4d4d4; color: #333 !important; }
-        .color-b { background: #333; }
-        .color-r { background: #a30000; }
+        /* Turn Chart */
+        .turn-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .turn-table th, .turn-table td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
+        .prob-bar-bg { background: #eee; height: 12px; border-radius: 6px; width: 100%; position: relative; }
+        .prob-bar-fill { background: var(--primary); height: 100%; border-radius: 6px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Heavenly Inferno Simulation</h1>
-    <p>Simulating the probability of hitting <strong>Mardu Colors (RWB)</strong> by Turn 4 to cast <em>Kaalia of the Vast</em>.</p>
+    <h1>Heavenly Inferno: Turn Reliability</h1>
 
     <div class="controls">
-        <div class="input-group">
-            <label for="iterInput">Total Iterations</label>
-            <input id="iterInput" type="number" value="1000000">
+        <div class="input-group" style="display:flex; flex-direction:column;">
+            <label>Iterations</label>
+            <input id="iterInput" type="number" value="100000" style="padding:8px; width:100px;">
         </div>
-        <button id="runBtn">Execute Simulation</button>
+        <button id="runBtn" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">Run Deep Simulation</button>
     </div>
 
-    <h3>Active Core Threads</h3>
     <div id="workerContainer"></div>
 
     <div class="dashboard">
-        <div class="stat-card">
-            <h3>Reliability (T4 Kaalia)</h3>
-            <div id="resSuccess" style="font-size: 2.5rem; font-weight: bold; color: var(--primary);">--</div>
-            <p id="status">Ready.</p>
+        <div class="kaalia-card">
+            <h3>Kaalia Req. (T4)</h3>
+            <div class="mana-wheel">
+                <div id="slice-any" class="slice any">1</div>
+                <div id="slice-w" class="slice white">W</div>
+                <div id="slice-b" class="slice black">B</div>
+                <div id="slice-r" class="slice red">R</div>
+            </div>
+            <p id="resSuccess" style="font-size: 1.8rem; margin-top: 15px; font-weight: bold;">--%</p>
+            <small>Success at T4</small>
         </div>
 
         <div class="stat-card">
-            <h3>Mana Color Availability</h3>
-            <div id="colorChart">
-            </div>
+            <h3>Cumulative Success by Turn</h3>
+            <table class="turn-table">
+                <thead><tr><th>Turn</th><th>Reliability</th><th></th></tr></thead>
+                <tbody id="turnResults"></tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <script id="worker-logic" type="text/plain">
-    // Domain Models
-    class Card {
-        constructor(name, types, colors = []) {
-            this.name = name;
-            this.types = types;
-            this.produces = colors;
-        }
-    }
-
-    class Deck {
-        constructor(cards) {
-            this.cards = [...cards];
-        }
-        shuffle() {
-            for (let i = this.cards.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
-            }
-            return this;
-        }
-        draw(count) {
-            return this.cards.splice(0, count);
-        }
-    }
-
-    class GameSimulation {
-        constructor(deckList) {
-            this.originalList = deckList;
-        }
-
-        runOnce() {
-            const deck = new Deck(this.originalList).shuffle();
-            const turn4Field = [...deck.draw(7), ...deck.draw(3)];
-
-            const lands = turn4Field.filter(c => c.types.includes('Land'));
-            const colorsProduced = new Set();
-            lands.forEach(l => l.produces.forEach(color => colorsProduced.add(color)));
-
-            return {
-                hasW: colorsProduced.has('W'),
-                hasB: colorsProduced.has('B'),
-                hasR: colorsProduced.has('R'),
-                landCount: lands.length
-            };
-        }
-    }
-
     self.onmessage = function(e) {
         const { iterations, deckList } = e.data;
-        const sim = new GameSimulation(deckList);
+        const turnsToSim = [1, 2, 3, 4, 5, 6, 7, 8];
+        let turnSuccesses = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0 };
+        let colorHitsAtT4 = { W:0, B:0, R:0, Any:0 };
 
-        let successes = 0;
-        let colorHits = { W: 0, B: 0, R: 0 };
-        let totalLands = 0;
+        for (let i = 0; i < iterations; i++) {
+            // Shuffle
+            let deck = [...deckList].sort(() => Math.random() - 0.5);
+            let hand = deck.splice(0, 7);
+            let playArea = [];
+            let currentColors = new Set();
+            let landsPlayed = 0;
 
-        for (let i = 1; i <= iterations; i++) {
-            const res = sim.runOnce();
-            if (res.hasW) colorHits.W++;
-            if (res.hasB) colorHits.B++;
-            if (res.hasR) colorHits.R++;
+            for (let t = 1; t <= 8; t++) {
+                if (t > 1) hand.push(deck.pop()); // Draw for turn
 
-            if (res.hasW && res.hasB && res.hasR) successes++;
-            totalLands += res.landCount;
+                // Play a land if we have one
+                const landIdx = hand.findIndex(c => c.types.includes('Land'));
+                if (landIdx > -1) {
+                    const land = hand.splice(landIdx, 1)[0];
+                    landsPlayed++;
+                    land.produces.forEach(c => currentColors.add(c));
+                }
 
-            if (i % Math.max(1, Math.floor(iterations / 20)) === 0) {
-                self.postMessage({ type: 'progress', percent: (i / iterations) * 100 });
+                // Check Kaalia: 4 total lands + R, W, B
+                const hasR = currentColors.has('R');
+                const hasW = currentColors.has('W');
+                const hasB = currentColors.has('B');
+                const has4 = landsPlayed >= 4;
+
+                if (hasR && hasW && hasB && has4) {
+                    // Successful cast on this turn OR earlier
+                    for (let later = t; later <= 8; later++) turnSuccesses[later]++;
+                    if (t === 4) {
+                        colorHitsAtT4.Any++; colorHitsAtT4.W++; colorHitsAtT4.B++; colorHitsAtT4.R++;
+                    }
+                    break; // No need to check later turns for this game
+                }
+
+                // Snapshot T4 partials for the UI wheel
+                if (t === 4) {
+                    if (landsPlayed >= 1) colorHitsAtT4.Any++;
+                    if (hasW) colorHitsAtT4.W++;
+                    if (hasB) colorHitsAtT4.B++;
+                    if (hasR) colorHitsAtT4.R++;
+                }
             }
+
+            if (i % (iterations / 10) === 0) self.postMessage({ type: 'progress', percent: (i/iterations)*100 });
         }
 
-        self.postMessage({
-            type: 'result',
-            successRate: (successes / iterations) * 100,
-            avgLands: totalLands / iterations,
-            colorStats: colorHits,
-            totalProcessed: iterations
-        });
+        self.postMessage({ type: 'result', turnSuccesses, colorHitsAtT4, total: iterations });
     };
 </script>
 
 <script>
   const createDeck = () => {
     const deck = [];
-    const add = (n, c, t, col) => { for(let i=0; i<c; i++) deck.push({name:n, types:t, produces:col}); };
-
-    // Basics
-    add('Plains', 8, ['Land'], ['W']);
-    add('Swamp', 8, ['Land'], ['B']);
-    add('Mountain', 8, ['Land'], ['R']);
-
-    // The "Perfect" Lands (Only 2 in the real deck)
-    add('Command Tower', 1, ['Land'], ['R', 'W', 'B']);
-    add('Rupture Spire', 1, ['Land'], ['R', 'W', 'B']);
-
-    // The "Dual" Lands (Only 2 colors each)
-    add('Akoum Refuge', 1, ['Land'], ['B', 'R']);
-    add('Boros Garrison', 1, ['Land'], ['R', 'W']);
-    add('Orzhov Basilica', 1, ['Land'], ['W', 'B']);
-    add('Rakdos Carnarium', 1, ['Land'], ['B', 'R']);
-    add('Molten Slagheap', 1, ['Land'], ['B', 'R']);
-
-    // The "Slow/Search" Lands (Can get any color, but specific)
-    add('Evolving Wilds', 1, ['Land'], ['R', 'W', 'B']);
-    add('Vivid Meadow', 1, ['Land'], ['W', 'B', 'R']);
-
-    // Colorless or Mono-Utility
-    add('Bojuka Bog', 1, ['Land'], ['B']);
-    add('Barren Moor', 1, ['Land'], ['B']);
-    add('Forgotten Cave', 1, ['Land'], ['R']);
-    add('Secluded Steppe', 1, ['Land'], ['W']);
-    add('Zoetic Cavern', 1, ['Land'], []); // Taps for colorless
-
-    // The rest of the 99
-    add('Spell', 61, ['NonLand'], []);
-
+    const add = (n, c, col) => { for(let i=0; i<c; i++) deck.push({name:n, types:['Land'], produces:col}); };
+    add('Plains', 8, ['W']); add('Swamp', 8, ['B']); add('Mountain', 8, ['R']);
+    add('Command Tower', 1, ['R', 'W', 'B']); add('Rupture Spire', 1, ['R', 'W', 'B']);
+    add('Duals', 5, ['B', 'R']); add('Duals2', 5, ['W', 'B']); add('Duals3', 2, ['R', 'W']);
+    while(deck.length < 99) deck.push({name:'Spell', types:['Spell'], produces:[]});
     return deck;
   };
-  const runBtn = document.getElementById('runBtn');
-  const workerContainer = document.getElementById('workerContainer');
-  const colorChart = document.getElementById('colorChart');
 
-  const workerCode = document.getElementById('worker-logic').textContent;
-  const workerUrl = URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'}));
+  const runBtn = document.getElementById('runBtn');
+  const workerUrl = URL.createObjectURL(new Blob([document.getElementById('worker-logic').textContent], {type: 'application/javascript'}));
 
   runBtn.onclick = () => {
-    const totalIterations = parseInt(document.getElementById('iterInput').value);
-    const numWorkers = navigator.hardwareConcurrency || 4;
-    const iterationsPerWorker = Math.floor(totalIterations / numWorkers);
+    const total = parseInt(document.getElementById('iterInput').value);
+    const cores = navigator.hardwareConcurrency || 4;
+    const itersPer = Math.floor(total / cores);
+    let finished = 0;
+    let aggTurns = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0 };
+    let aggColors = { W:0, B:0, R:0, Any:0 };
 
-    workerContainer.innerHTML = '';
-    colorChart.innerHTML = '';
-
-    let workersFinished = 0;
-    let aggregateSuccessRate = 0;
-    let aggregateColorStats = { W: 0, B: 0, R: 0 };
-
+    document.getElementById('workerContainer').innerHTML = '';
     runBtn.disabled = true;
 
-    for (let i = 0; i < numWorkers; i++) {
-      // UI setup for each worker
-      const row = document.createElement('div');
-      row.className = 'worker-row';
-      row.innerHTML = `Core ${i+1}: <span id="p-text-${i}">0%</span><div class="mini-progress"><div id="p-bar-${i}" class="mini-fill"></div></div>`;
-      workerContainer.appendChild(row);
+    for (let i = 0; i < cores; i++) {
+      const div = document.createElement('div');
+      div.className = 'worker-row';
+      div.innerHTML = `Core ${i+1}<div style="background:#ddd;height:4px;margin-top:4px"><div id="bar-${i}" class="mini-fill"></div></div>`;
+      document.getElementById('workerContainer').appendChild(div);
 
-      const worker = new Worker(workerUrl);
-      const iters = (i === numWorkers - 1) ? totalIterations - (iterationsPerWorker * (numWorkers - 1)) : iterationsPerWorker;
-
-      worker.postMessage({ iterations: iters, deckList: createDeck() });
-
-      worker.onmessage = (e) => {
-        if (e.data.type === 'progress') {
-          document.getElementById(`p-bar-${i}`).style.width = e.data.percent + '%';
-          document.getElementById(`p-text-${i}`).innerText = Math.round(e.data.percent) + '%';
-        } else if (e.data.type === 'result') {
-          workersFinished++;
-          const weight = iters / totalIterations;
-          aggregateSuccessRate += (e.data.successRate * weight);
-          aggregateColorStats.W += (e.data.colorStats.W);
-          aggregateColorStats.B += (e.data.colorStats.B);
-          aggregateColorStats.R += (e.data.colorStats.R);
-
-          worker.terminate();
-
-          if (workersFinished === numWorkers) {
-            renderFinalResults(aggregateSuccessRate, aggregateColorStats, totalIterations);
-          }
+      const w = new Worker(workerUrl);
+      w.postMessage({ iterations: itersPer, deckList: createDeck() });
+      w.onmessage = (e) => {
+        if (e.data.type === 'progress') document.getElementById(`bar-${i}`).style.width = e.data.percent + '%';
+        if (e.data.type === 'result') {
+          finished++;
+          Object.keys(aggTurns).forEach(k => aggTurns[k] += e.data.turnSuccesses[k]);
+          Object.keys(aggColors).forEach(k => aggColors[k] += e.data.colorHitsAtT4[k]);
+          w.terminate();
+          if (finished === cores) render(aggTurns, aggColors, total);
         }
       };
     }
   };
 
-  function renderFinalResults(rate, colors, total) {
-    document.getElementById('resSuccess').innerText = rate.toFixed(2) + '%';
-    document.getElementById('status').innerText = "Simulation Finalized.";
+  function render(turns, colors, total) {
     runBtn.disabled = false;
+    document.getElementById('resSuccess').innerText = ((turns[4]/total)*100).toFixed(1) + '%';
 
-    const createBar = (label, count, cssClass) => {
-      const pct = ((count / total) * 100).toFixed(1);
-      return `<div class="chart-row">
-                <div style="width: 50px">${label}</div>
-                <div class="bar-container"><div class="bar-fill ${cssClass}" style="width: ${pct}%">${pct}%</div></div>
-            </div>`;
+    // Update Mana Wheel Slices
+    const updateSlice = (id, val) => {
+      const pct = (val/total)*100;
+      const el = document.getElementById(id);
+      el.style.opacity = (pct / 100);
+      el.classList.toggle('active', pct > 50);
     };
+    updateSlice('slice-any', colors.Any);
+    updateSlice('slice-w', colors.W);
+    updateSlice('slice-b', colors.B);
+    updateSlice('slice-r', colors.R);
 
-    colorChart.innerHTML =
-      createBar('White', colors.W, 'color-w') +
-      createBar('Black', colors.B, 'color-b') +
-      createBar('Red', colors.R, 'color-r');
+    // Update Turn Table
+    const tbody = document.getElementById('turnResults');
+    tbody.innerHTML = '';
+    Object.keys(turns).forEach(t => {
+      const pct = (turns[t]/total)*100;
+      tbody.innerHTML += `<tr><td>Turn ${t}</td><td>${pct.toFixed(1)}%</td>
+                <td><div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${pct}%"></div></div></td></tr>`;
+    });
   }
 </script>
 </body>

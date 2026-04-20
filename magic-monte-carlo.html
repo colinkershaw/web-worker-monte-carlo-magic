@@ -5,19 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Heavenly Inferno: Monte Carlo Multi-Core Simulator</title>
     <style>
-        :root { --primary: #722f37; --bg: #fdfaf6; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: #333; padding: 2rem; line-height: 1.6; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h1 { color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        .controls { display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-end; }
-        .input-group { display: flex; flex-direction: column; }
-        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 120px; }
-        button { background: var(--primary); color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-        button:hover { opacity: 0.9; }
-        #results { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        :root { --primary: #722f37; --bg: #fdfaf6; --w: #f0f2f0; --b: #2b2b2b; --r: #d32f2f; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: #333; padding: 2rem; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+
+        .controls { display: flex; gap: 1rem; margin-bottom: 2rem; align-items: flex-end; background: #eee; padding: 1rem; border-radius: 8px; }
+        .input-group { display: flex; flex-direction: column; font-weight: bold; }
+        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 150px; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* Worker Grid */
+        #workerContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 2rem; }
+        .worker-row { background: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.8rem; }
+        .mini-progress { width: 100%; height: 6px; background: #ddd; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+        .mini-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.1s; }
+
+        /* Stats & Charts */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
         .stat-card { background: #f8f9fa; padding: 1.5rem; border-left: 5px solid var(--primary); border-radius: 4px; }
-        .progress-bar { width: 100%; height: 10px; background: #eee; border-radius: 5px; margin-top: 10px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--primary); width: 0; transition: width 0.3s; }
+
+        .chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .bar-container { flex-grow: 1; height: 20px; background: #eee; border-radius: 10px; overflow: hidden; }
+        .bar-fill { height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; color: white; font-size: 0.7rem; font-weight: bold; }
+
+        .color-w { background: #d4d4d4; color: #333 !important; }
+        .color-b { background: #333; }
+        .color-r { background: #a30000; }
     </style>
 </head>
 <body>
@@ -31,20 +44,23 @@
             <label for="iterInput">Total Iterations</label>
             <input id="iterInput" type="number" value="1000000">
         </div>
-        <button id="runBtn">Start Simulation</button>
+        <button id="runBtn">Execute Simulation</button>
     </div>
 
-    <div id="progressBar" class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
-    <p id="status">Ready.</p>
+    <h3>Active Core Threads</h3>
+    <div id="workerContainer"></div>
 
-    <div id="results">
+    <div class="dashboard">
         <div class="stat-card">
-            <strong>Success Rate</strong>
-            <div id="resSuccess" style="font-size: 2rem;">--</div>
+            <h3>Reliability (T4 Kaalia)</h3>
+            <div id="resSuccess" style="font-size: 2.5rem; font-weight: bold; color: var(--primary);">--</div>
+            <p id="status">Ready.</p>
         </div>
+
         <div class="stat-card">
-            <strong>Avg Lands (Turn 4)</strong>
-            <div id="resLands" style="font-size: 2rem;">--</div>
+            <h3>Mana Color Availability</h3>
+            <div id="colorChart">
+            </div>
         </div>
     </div>
 </div>
@@ -82,18 +98,16 @@
 
         runOnce() {
             const deck = new Deck(this.originalList).shuffle();
-            const hand = deck.draw(7);
-            const turn4Field = [...hand, ...deck.draw(3)]; // Draw for T1, T2, T3 (assuming on the play)
+            const turn4Field = [...deck.draw(7), ...deck.draw(3)];
 
             const lands = turn4Field.filter(c => c.types.includes('Land'));
             const colorsProduced = new Set();
             lands.forEach(l => l.produces.forEach(color => colorsProduced.add(color)));
 
-            // Success = Can we produce R, W, and B?
-            const canCastKaalia = ['R', 'W', 'B'].every(c => colorsProduced.has(c));
-
             return {
-                success: canCastKaalia,
+                hasW: colorsProduced.has('W'),
+                hasB: colorsProduced.has('B'),
+                hasR: colorsProduced.has('R'),
                 landCount: lands.length
             };
         }
@@ -102,15 +116,21 @@
     self.onmessage = function(e) {
         const { iterations, deckList } = e.data;
         const sim = new GameSimulation(deckList);
+
         let successes = 0;
+        let colorHits = { W: 0, B: 0, R: 0 };
         let totalLands = 0;
 
         for (let i = 1; i <= iterations; i++) {
-            const result = sim.runOnce();
-            if (result.success) successes++;
-            totalLands += result.landCount;
+            const res = sim.runOnce();
+            if (res.hasW) colorHits.W++;
+            if (res.hasB) colorHits.B++;
+            if (res.hasR) colorHits.R++;
 
-            if (i % Math.max(1, Math.floor(iterations / 10)) === 0) {
+            if (res.hasW && res.hasB && res.hasR) successes++;
+            totalLands += res.landCount;
+
+            if (i % Math.max(1, Math.floor(iterations / 20)) === 0) {
                 self.postMessage({ type: 'progress', percent: (i / iterations) * 100 });
             }
         }
@@ -118,51 +138,54 @@
         self.postMessage({
             type: 'result',
             successRate: (successes / iterations) * 100,
-            avgLands: totalLands / iterations
+            avgLands: totalLands / iterations,
+            colorStats: colorHits,
+            totalProcessed: iterations
         });
     };
 </script>
 
 <script>
-  // --- Deck Definition ---
-  // Simplified for the simulation: focus on Lands and their color production
   const createDeck = () => {
     const deck = [];
-    const add = (name, count, types, colors) => {
-      for(let i=0; i<count; i++) deck.push({name, types, produces: colors});
-    };
+    const add = (n, c, t, col) => { for(let i=0; i<c; i++) deck.push({name:n, types:t, produces:col}); };
 
-    // Mana Base (38 Lands)
-    add('Plains', 8, ['Land', 'Basic'], ['W']);
-    add('Swamp', 8, ['Land', 'Basic'], ['B']);
-    add('Mountain', 8, ['Land', 'Basic'], ['R']);
+    // Basics
+    add('Plains', 8, ['Land'], ['W']);
+    add('Swamp', 8, ['Land'], ['B']);
+    add('Mountain', 8, ['Land'], ['R']);
+
+    // The "Perfect" Lands (Only 2 in the real deck)
     add('Command Tower', 1, ['Land'], ['R', 'W', 'B']);
+    add('Rupture Spire', 1, ['Land'], ['R', 'W', 'B']);
+
+    // The "Dual" Lands (Only 2 colors each)
     add('Akoum Refuge', 1, ['Land'], ['B', 'R']);
     add('Boros Garrison', 1, ['Land'], ['R', 'W']);
     add('Orzhov Basilica', 1, ['Land'], ['W', 'B']);
     add('Rakdos Carnarium', 1, ['Land'], ['B', 'R']);
-    add('Rupture Spire', 1, ['Land'], ['R', 'W', 'B']);
-    add('Vivid Meadow', 1, ['Land'], ['W', 'B', 'R']); // Simplified vivids
-    add('Bojuka Bog', 1, ['Land'], ['B']);
-    add('Evolving Wilds', 1, ['Land'], ['R', 'W', 'B']); // Simplified fetch
     add('Molten Slagheap', 1, ['Land'], ['B', 'R']);
-    add('Zoetic Cavern', 1, ['Land'], ['C']);
+
+    // The "Slow/Search" Lands (Can get any color, but specific)
+    add('Evolving Wilds', 1, ['Land'], ['R', 'W', 'B']);
+    add('Vivid Meadow', 1, ['Land'], ['W', 'B', 'R']);
+
+    // Colorless or Mono-Utility
+    add('Bojuka Bog', 1, ['Land'], ['B']);
     add('Barren Moor', 1, ['Land'], ['B']);
     add('Forgotten Cave', 1, ['Land'], ['R']);
     add('Secluded Steppe', 1, ['Land'], ['W']);
+    add('Zoetic Cavern', 1, ['Land'], []); // Taps for colorless
 
-    // Fill remaining 61 slots with non-lands
+    // The rest of the 99
     add('Spell', 61, ['NonLand'], []);
 
     return deck;
   };
-
-  // --- Main UI Logic ---
   const runBtn = document.getElementById('runBtn');
-  const status = document.getElementById('status');
-  const fill = document.getElementById('progressFill');
+  const workerContainer = document.getElementById('workerContainer');
+  const colorChart = document.getElementById('colorChart');
 
-  // Create Worker from Blob
   const workerCode = document.getElementById('worker-logic').textContent;
   const workerUrl = URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'}));
 
@@ -171,45 +194,67 @@
     const numWorkers = navigator.hardwareConcurrency || 4;
     const iterationsPerWorker = Math.floor(totalIterations / numWorkers);
 
+    workerContainer.innerHTML = '';
+    colorChart.innerHTML = '';
+
     let workersFinished = 0;
     let aggregateSuccessRate = 0;
-    let aggregateAvgLands = 0;
-    const workerProgress = new Array(numWorkers).fill(0);
+    let aggregateColorStats = { W: 0, B: 0, R: 0 };
 
     runBtn.disabled = true;
-    status.innerText = `Simulating on ${numWorkers} cores...`;
 
     for (let i = 0; i < numWorkers; i++) {
+      // UI setup for each worker
+      const row = document.createElement('div');
+      row.className = 'worker-row';
+      row.innerHTML = `Core ${i+1}: <span id="p-text-${i}">0%</span><div class="mini-progress"><div id="p-bar-${i}" class="mini-fill"></div></div>`;
+      workerContainer.appendChild(row);
+
       const worker = new Worker(workerUrl);
-      const iters = (i === numWorkers - 1)
-        ? totalIterations - (iterationsPerWorker * (numWorkers - 1))
-        : iterationsPerWorker;
+      const iters = (i === numWorkers - 1) ? totalIterations - (iterationsPerWorker * (numWorkers - 1)) : iterationsPerWorker;
 
       worker.postMessage({ iterations: iters, deckList: createDeck() });
 
       worker.onmessage = (e) => {
         if (e.data.type === 'progress') {
-          workerProgress[i] = e.data.percent;
-          const totalPercent = workerProgress.reduce((a, b) => a + b, 0) / numWorkers;
-          fill.style.width = `${totalPercent}%`;
+          document.getElementById(`p-bar-${i}`).style.width = e.data.percent + '%';
+          document.getElementById(`p-text-${i}`).innerText = Math.round(e.data.percent) + '%';
         } else if (e.data.type === 'result') {
           workersFinished++;
-          // Weight the results based on actual work done by this worker
-          aggregateSuccessRate += (e.data.successRate * (iters / totalIterations));
-          aggregateAvgLands += (e.data.avgLands * (iters / totalIterations));
+          const weight = iters / totalIterations;
+          aggregateSuccessRate += (e.data.successRate * weight);
+          aggregateColorStats.W += (e.data.colorStats.W);
+          aggregateColorStats.B += (e.data.colorStats.B);
+          aggregateColorStats.R += (e.data.colorStats.R);
 
           worker.terminate();
 
           if (workersFinished === numWorkers) {
-            document.getElementById('resSuccess').innerText = aggregateSuccessRate.toFixed(2) + '%';
-            document.getElementById('resLands').innerText = aggregateAvgLands.toFixed(2);
-            status.innerText = `Complete (via ${numWorkers} workers).`;
-            runBtn.disabled = false;
+            renderFinalResults(aggregateSuccessRate, aggregateColorStats, totalIterations);
           }
         }
       };
     }
   };
+
+  function renderFinalResults(rate, colors, total) {
+    document.getElementById('resSuccess').innerText = rate.toFixed(2) + '%';
+    document.getElementById('status').innerText = "Simulation Finalized.";
+    runBtn.disabled = false;
+
+    const createBar = (label, count, cssClass) => {
+      const pct = ((count / total) * 100).toFixed(1);
+      return `<div class="chart-row">
+                <div style="width: 50px">${label}</div>
+                <div class="bar-container"><div class="bar-fill ${cssClass}" style="width: ${pct}%">${pct}%</div></div>
+            </div>`;
+    };
+
+    colorChart.innerHTML =
+      createBar('White', colors.W, 'color-w') +
+      createBar('Black', colors.B, 'color-b') +
+      createBar('Red', colors.R, 'color-r');
+  }
 </script>
 </body>
 </html>

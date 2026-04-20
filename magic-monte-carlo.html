@@ -98,6 +98,8 @@
         <div class="chart-section">
             <h3 style="margin-top:0; color:var(--accent)">CASTING VELOCITY BY TURN</h3>
             <div id="turnChart"></div>
+            <h3 style="margin-top:2rem; color:#ff3131">FAILURE ATTRIBUTION (T4)</h3>
+            <div id="failureWaterfall"></div>
         </div>
     </div>
 </div>
@@ -107,6 +109,8 @@
         const { iterations, deckList } = e.data;
         let turnSuccesses = Array(9).fill(0);
         let colorHitsAtT4 = { W:0, B:0, R:0, Any:0 };
+        // 1. INITIALIZE TRACKER
+        let failReasons = { land: 0, w: 0, r: 0, b: 0 };
 
         /**
          * Fisher-Yates shuffle logic for improved performance and accuracy.
@@ -133,20 +137,37 @@
                     landsOnBoard++;
                     land.produces.forEach(c => colors.add(c));
                 }
-                if (colors.has('R') && colors.has('W') && colors.has('B') && landsOnBoard >= 4) {
+
+                // Track success (castable Kaalia)
+                const hasAllColors = colors.has('R') && colors.has('W') && colors.has('B');
+                const hasFourLands = landsOnBoard >= 4;
+
+                if (hasAllColors && hasFourLands) {
                     for (let later = t; later <= 8; later++) turnSuccesses[later]++;
                     break;
                 }
+
+                // 2. T4 ATTRIBUTION LOGIC
                 if (t === 4) {
+                    // General color hits for the wheel
                     if (landsOnBoard >= 1) colorHitsAtT4.Any++;
                     if (colors.has('W')) colorHitsAtT4.W++;
                     if (colors.has('B')) colorHitsAtT4.B++;
                     if (colors.has('R')) colorHitsAtT4.R++;
+
+                    // If NOT successful, log the primary culprit
+                    if (!(hasAllColors && hasFourLands)) {
+                        if (!hasFourLands) failReasons.land++;
+                        else if (!colors.has('W')) failReasons.w++;
+                        else if (!colors.has('R')) failReasons.r++;
+                        else if (!colors.has('B')) failReasons.b++;
+                    }
                 }
             }
             if (i % Math.floor(iterations / 20) === 0) self.postMessage({ type: 'progress', percent: (i/iterations)*100 });
         }
-        self.postMessage({ type: 'result', turnSuccesses, colorHitsAtT4 });
+        // 3. ENSURE SENT BACK: Included failReasons in the result object
+        self.postMessage({ type: 'result', turnSuccesses, colorHitsAtT4, failReasons });
     };
 </script>
 
@@ -187,6 +208,7 @@
     let finished = 0;
     let aggTurns = Array(9).fill(0);
     let aggColors = { W:0, B:0, R:0, Any:0 };
+    let aggFail = { land: 0, w: 0, r: 0, b: 0 };
 
     document.getElementById('workerContainer').innerHTML = '';
     document.getElementById('turnChart').innerHTML = '';
@@ -211,8 +233,11 @@
           e.data.turnSuccesses.forEach((val, idx) => aggTurns[idx] += val);
           // noinspection JSUnresolvedReference
           Object.keys(aggColors).forEach(k => aggColors[k] += e.data.colorHitsAtT4[k]);
+          // NEW: Sum up failure reasons from this thread
+          Object.keys(aggFail).forEach(k => aggFail[k] += e.data.failReasons[k]);
+
           w.terminate();
-          if (finished === cores) render(aggTurns, aggColors, total);
+          if (finished === cores) render(aggTurns, aggColors, total, aggFail);
         }
       };
 
@@ -229,7 +254,7 @@
       };    }
   };
 
-  function render(turns, colors, total) {
+function render(turns, colors, total, failReasons) {
     runBtn.disabled = false;
     document.getElementById('resSuccess').innerText = ((turns[4]/total)*100).toFixed(1) + '%';
 
@@ -249,23 +274,49 @@
       document.getElementById(`pct-${c.id}`).innerText = pct.toFixed(1) + '%';
     });
 
-    const chart = document.getElementById('turnChart');
-    const fragment = document.createDocumentFragment();
+    // RESTORED: Turn-by-Turn Casting Velocity Chart
+    const turnChart = document.getElementById('turnChart');
+    turnChart.innerHTML = '';
     for(let t=1; t<=8; t++) {
       const pct = (turns[t]/total)*100;
-      const div = document.createElement('div');
-      div.className = 'turn-row';
-      div.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem">
-            <span>TURN ${t}</span><span>${pct.toFixed(1)}%</span>
-        </div>
-        <div class="bar-outer">
-            <!--suppress CssInvalidHtmlTagReference -->
-            <div class="bar-inner" style="width:${pct}%"></div>
+      turnChart.innerHTML += `
+        <div class="turn-row">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem">
+                <span>Turn ${t}</span><span>${pct.toFixed(1)}%</span>
+            </div>
+            <div class="bar-outer">
+                <div class="bar-inner" style="width:${pct}%"></div>
+            </div>
         </div>`;
-      fragment.appendChild(div);
     }
-    chart.appendChild(fragment);  }
+
+    // Failure Attribution Logic
+    const failChart = document.getElementById('failureWaterfall');
+    if (!failChart) return;
+    failChart.innerHTML = '';
+
+    const categories = [
+      { label: 'Missing 4th Land', val: failReasons.land, color: '#475569' },
+      { label: 'Missing White', val: failReasons.w, color: 'var(--white)' },
+      { label: 'Missing Red', val: failReasons.r, color: 'var(--red)' },
+      { label: 'Missing Black', val: failReasons.b, color: 'var(--black)' }
+    ];
+
+    categories.forEach(c => {
+      const pct = (c.val / total) * 100;
+      if (pct === 0) return; // Don't show 0% failures
+
+      failChart.innerHTML += `
+            <div class="turn-row">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem">
+                    <span>${c.label}</span><span style="color:#ff3131">-${pct.toFixed(1)}%</span>
+                </div>
+                <div class="bar-outer">
+                    <div class="bar-inner" style="width:${pct}%; background:${c.color}; opacity:0.6"></div>
+                </div>
+            </div>`;
+    });
+  }
 </script>
 </body>
 </html>

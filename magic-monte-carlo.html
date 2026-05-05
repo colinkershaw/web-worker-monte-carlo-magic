@@ -1,22 +1,24 @@
 <!DOCTYPE html>
-<!--suppress SpellCheckingInspection -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heavenly Inferno: Mana Velocity Dashboard</title>
-    <!--suppress CssRedundantUnit -->
+    <title>Mana Velocity Dashboard</title>
     <style>
         :root {
             --accent: #00e5ff; --any: #94a3b8; --white: #ffffff;
-            --black: #000000; --red: #ff3131; --bg: #0f172a; --card: #1e293b;
+            --black: #000000; --red: #ff3131; --blue: #3b82f6; --green: #22c55e;
+            --bg: #0f172a; --card: #1e293b;
         }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: #f1f5f9; padding: 2rem; }
         .container { max-width: 1200px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .controls { display: flex; gap: 1rem; background: var(--card); padding: 1rem; border-radius: 12px; border: 1px solid #334155; }
-        input { background: #0f172a; border: 1px solid #475569; color: white; padding: 8px; border-radius: 6px; width: 100px; }
-        button { background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .header { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+        .title-row { display: flex; justify-content: space-between; align-items: center; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; background: var(--card); padding: 1rem; border-radius: 12px; border: 1px solid #334155; }
+        .control-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        input, textarea { background: #0f172a; border: 1px solid #475569; color: white; padding: 8px; border-radius: 6px; }
+        textarea { resize: vertical; font-family: monospace; }
+        button { background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; height: fit-content; align-self: end; }
 
         /* Multi-Thread Visuals */
         #workerContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 2rem; }
@@ -24,100 +26,75 @@
         .mini-progress { height: 4px; background: #0f172a; border-radius: 2px; overflow: hidden; margin-top: 5px; }
         .mini-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; box-shadow: 0 0 8px var(--accent); }
 
-        .main-grid { display: grid; grid-template-columns: 400px 1fr; gap: 2rem; }
-        .kaalia-card { background: var(--card); padding: 2rem; border-radius: 16px; border: 1px solid #334155; text-align: center; position: relative; }
-
-        /* Synchronized SVG Wheel Styles */
-        .wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto; }
+        .turns-container { display: flex; flex-direction: column; gap: 2rem; }
+        .turn-card { background: var(--card); padding: 2rem; border-radius: 16px; border: 1px solid #334155; }
+        .turn-header { display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 1.2rem; font-weight: bold; color: var(--accent); }
+        .bar-outer { background: #0f172a; height: 20px; border-radius: 10px; overflow: hidden; border: 1px solid #334155; margin-bottom: 2rem; }
+        .bar-inner { height: 100%; background: linear-gradient(90deg, #3a7bd5, #00e5ff); width: 0%; transition: width 0.8s; }
+        
+        .turn-details { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; }
+        
+        /* Wheel Styles */
+        .wheel-container { position: relative; width: 250px; height: 250px; margin: 0 auto; }
         .wheel-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
         .slice-bg { fill: rgba(255, 255, 255, 0.05); stroke: #334155; stroke-width: 0.5; }
         .slice-fill { transition: d 0.5s ease-out; opacity: 0.9; }
         .slice-outline { fill: none; stroke-width: 2; }
-
+        
         .wheel-labels { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .label { position: absolute; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; transform: translate(-50%, -50%); }
         .label-pct { display: block; color: var(--accent); font-size: 1.1rem; }
 
-        .t4-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
-        .t4-val { font-size: 1.8rem; font-weight: 900; color: var(--accent); text-shadow: 0 0 15px rgba(0,229,255,0.4); }
-
-        .chart-section, chart-section-failure { background: var(--card); padding: 2rem; border-radius: 16px; border: 1px solid #334155; }
-        /*.chart-section-failure {border-radius: 10px}*/
-        .turn-row { margin-bottom: 1.2rem; }
-        .bar-outer { background: #0f172a; height: 30px; border-radius: 15px; overflow: hidden; border: 1px solid #334155; }
-        .bar-inner { height: 100%; background: linear-gradient(90deg, #3a7bd5, #00e5ff); width: 0%; transition: width 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        .failure-section { display: flex; flex-direction: column; gap: 0.8rem; justify-content: center; }
+        .fail-row { display: flex; flex-direction: column; gap: 0.2rem; }
+        .fail-text { display: flex; justify-content: space-between; font-size: 0.85rem; }
+        .fail-bar-outer { background: #0f172a; height: 8px; border-radius: 4px; overflow: hidden; }
+        .fail-bar-inner { height: 100%; background: #ff3131; width: 0%; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>HEAVENLY INFERNO <span style="color:var(--accent)">ANALYZER</span></h1>
+        <div class="title-row">
+            <h1>MANA VELOCITY <span style="color:var(--accent)">ANALYZER</span></h1>
+        </div>
         <div class="controls">
-            <label for="iterInput">Iterations</label>
-            <input id="iterInput" type="number" value="10000000">
+            <div class="control-group">
+                <label for="targetInput">Target Cost (e.g., 1 W B R)</label>
+                <input id="targetInput" type="text" value="1 W B R" placeholder="1 W B R U G">
+            </div>
+            <div class="control-group">
+                <label for="deckInput">Deck (e.g., 10xW, 4xWB)</label>
+                <textarea id="deckInput" rows="4">8xW
+8xB
+8xR
+12xWBR
+2xWR</textarea>
+            </div>
+            <div class="control-group">
+                <label for="iterInput">Iterations</label>
+                <input id="iterInput" type="number" value="1000000">
+            </div>
             <button id="runBtn">INITIATE ENGINE</button>
         </div>
     </div>
 
     <div id="workerContainer"></div>
-
-    <div class="main-grid">
-        <div class="kaalia-card">
-            <div class="wheel-container">
-                <svg class="wheel-svg" viewBox="0 0 100 100">
-                    <path id="bg-w" class="slice-bg"  d=""/>
-                    <path id="fill-w" class="slice-fill" fill="var(--white)"  d=""/>
-                    <path id="out-w" class="slice-outline" stroke="var(--white)"  d=""/>
-                    <path id="bg-r" class="slice-bg"  d=""/>
-                    <path id="fill-r" class="slice-fill" fill="var(--red)"  d=""/>
-                    <path id="out-r" class="slice-outline" stroke="var(--red)"  d=""/>
-                    <path id="bg-b" class="slice-bg"  d=""/>
-                    <path id="fill-b" class="slice-fill" fill="var(--black)"  d=""/>
-                    <path id="out-b" class="slice-outline" stroke="var(--black)"  d=""/>
-                    <path id="bg-any" class="slice-bg"  d=""/>
-                    <path id="fill-any" class="slice-fill" fill="var(--any)"  d=""/>
-                    <path id="out-any" class="slice-outline" stroke="var(--any)"  d=""/>
-                </svg>
-
-                <div class="wheel-labels">
-                    <!--suppress CssRedundantUnit -->
-                    <div class="label" style="top: 0%; left: 10%;">Red <span id="pct-r" class="label-pct">0%</span></div>
-                    <!--suppress CssRedundantUnit -->
-                    <div class="label" style="top: 0%; left: 90%;">Black <span id="pct-b" class="label-pct">0%</span></div>
-                    <div class="label" style="top: 100%; left: 90%;">Any <span id="pct-any" class="label-pct">0%</span></div>
-                    <div class="label" style="top: 100%; left: 10%;">White <span id="pct-w" class="label-pct">0%</span></div>
-                </div>
-
-                <div class="t4-center">
-                    <div id="resSuccess" class="t4-val">--%</div>
-                    <div style="font-size:0.8rem; letter-spacing:1px; color:#2ae3f3">T4 TOTAL</div>
-                </div>
-            </div>
-            <div class="chart-section-failure">
-                <h3 style="margin-top:2rem; color:#ff3131">FAILURE ATTRIBUTION (T4)</h3>
-                <div id="failureWaterfall"></div>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <h3 style="margin-top:0; color:var(--accent)">CASTING VELOCITY BY TURN</h3>
-            <div id="turnChart"></div>
-        </div>
-    </div>
+    <div id="turnsContainer" class="turns-container"></div>
 </div>
 
 <script id="worker-logic" type="text/plain">
     self.onmessage = function(e) {
-        const { iterations, deckList } = e.data;
-        let turnSuccesses = Array(9).fill(0);
-        let colorHitsAtT4 = { W:0, B:0, R:0, Any:0 };
-        // 1. INITIALIZE TRACKER
-        let failReasons = { land: 0, w: 0, r: 0, b: 0 };
+        const { iterations, deckList, targetCost } = e.data;
+        
+        // targetCost is parsed as: { total: 4, req: { W:1, B:1, R:1 }, generic: 1, colors: ['W','B','R'] }
+        let turnData = Array(9).fill(null).map(() => ({
+            successes: 0,
+            colorHits: Object.fromEntries(targetCost.colors.map(c => [c, 0])),
+            failReasons: { land: 0, ...Object.fromEntries(targetCost.colors.map(c => [c, 0])) }
+        }));
 
-        /**
-         * Fisher-Yates shuffle logic for improved performance and accuracy.
-         */
         function shuffle(arr) {
             for (let i = arr.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -129,8 +106,9 @@
         for (let i = 1; i <= iterations; i++) {
             let deck = shuffle([...deckList]);
             let hand = deck.splice(0, 7);
-            let colors = new Set();
+            let colorsAvailable = new Set();
             let landsOnBoard = 0;
+            let successFound = false;
 
             for (let t = 1; t <= 8; t++) {
                 if (t > 1) hand.push(deck.pop());
@@ -138,39 +116,43 @@
                 if (landIdx > -1) {
                     const land = hand.splice(landIdx, 1)[0];
                     landsOnBoard++;
-                    land.produces.forEach(c => colors.add(c));
+                    land.produces.forEach(c => colorsAvailable.add(c));
                 }
 
-                // Track success (castable Kaalia)
-                const hasAllColors = colors.has('R') && colors.has('W') && colors.has('B');
-                const hasFourLands = landsOnBoard >= 4;
-
-                if (hasAllColors && hasFourLands) {
-                    for (let later = t; later <= 8; later++) turnSuccesses[later]++;
-                    break;
+                if (successFound) {
+                    turnData[t].successes++;
+                    continue;
                 }
 
-                // 2. T4 ATTRIBUTION LOGIC
-                if (t === 4) {
-                    // General color hits for the wheel
-                    if (landsOnBoard >= 1) colorHitsAtT4.Any++;
-                    if (colors.has('W')) colorHitsAtT4.W++;
-                    if (colors.has('B')) colorHitsAtT4.B++;
-                    if (colors.has('R')) colorHitsAtT4.R++;
-
-                    // If NOT successful, log the primary culprit
-                    if (!(hasAllColors && hasFourLands)) {
-                        if (!hasFourLands) failReasons.land++;
-                        else if (!colors.has('W')) failReasons.w++;
-                        else if (!colors.has('R')) failReasons.r++;
-                        else if (!colors.has('B')) failReasons.b++;
+                let hasAllColors = true;
+                let missingColor = null;
+                for (let c of targetCost.colors) {
+                    if (!colorsAvailable.has(c)) {
+                        hasAllColors = false;
+                        if (!missingColor) missingColor = c;
                     }
+                }
+                
+                const hasEnoughLands = landsOnBoard >= targetCost.total;
+
+                // Track hits for pie chart (only for target colors)
+                if (hasEnoughLands) {
+                    targetCost.colors.forEach(c => {
+                        if (colorsAvailable.has(c)) turnData[t].colorHits[c]++;
+                    });
+                }
+
+                if (hasAllColors && hasEnoughLands) {
+                    turnData[t].successes++;
+                    successFound = true;
+                } else {
+                    if (!hasEnoughLands) turnData[t].failReasons.land++;
+                    else if (missingColor) turnData[t].failReasons[missingColor]++;
                 }
             }
             if (i % Math.floor(iterations / 20) === 0) self.postMessage({ type: 'progress', percent: (i/iterations)*100 });
         }
-        // 3. ENSURE SENT BACK: Included failReasons in the result object
-        self.postMessage({ type: 'result', turnSuccesses, colorHitsAtT4, failReasons });
+        self.postMessage({ type: 'result', turnData });
     };
 </script>
 
@@ -181,145 +163,183 @@
   }
 
   function describeArc(x, y, r, startAngle, endAngle) {
-    if (r <= 0) return ""; // Handle 0% cases cleanly
+    if (r <= 0) return ""; 
     const start = polarToCartesian(x, y, r, endAngle);
     const end = polarToCartesian(x, y, r, startAngle);
-    return ["M", x, y, "L", start.x, start.y, "A", r, r, 0, 0, 0, end.x, end.y, "L", x, y, "Z"].join(" ");
+    // Handle full circle
+    if (Math.abs(endAngle - startAngle) >= 360) {
+        return \`M \${x} \${y-r} A \${r} \${r} 0 1 1 \${x} \${y+r} A \${r} \${r} 0 1 1 \${x} \${y-r} Z\`;
+    }
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+    return ["M", x, y, "L", start.x, start.y, "A", r, r, 0, largeArcFlag, 0, end.x, end.y, "L", x, y, "Z"].join(" ");
   }
 
-  const createDeck = () => {
-    const deck = [];
-    const add = (n, c, col) => { for(let i=0; i<c; i++) deck.push({name:n, types:['Land'], produces:col}); };
-    add('Plains', 8, ['W']); add('Swamp', 8, ['B']); add('Mountain', 8, ['R']);
-    add('Tower', 1, ['R', 'W', 'B']); add('Spire', 1, ['R', 'W', 'B']);
-    add('Duals', 10, ['R', 'W', 'B']);
-    while(deck.length < 99) deck.push({name:'Spell', types:['Spell'], produces:[]});
-    return deck;
-  };
+  const colorMap = { 'W': 'var(--white)', 'U': 'var(--blue)', 'B': 'var(--black)', 'R': 'var(--red)', 'G': 'var(--green)', 'C': 'var(--any)' };
+
+  function parseTarget(str) {
+      let tokens = str.toUpperCase().match(/([0-9]+|[WUBRGC])/g) || [];
+      let total = 0, req = {}, colors = [];
+      tokens.forEach(t => {
+          if (!isNaN(parseInt(t))) total += parseInt(t);
+          else {
+              req[t] = (req[t] || 0) + 1;
+              total += 1;
+              if (!colors.includes(t)) colors.push(t);
+          }
+      });
+      return { total, req, colors };
+  }
+
+  function parseDeck(str) {
+      const deck = [];
+      const lines = str.toUpperCase().split('\\n');
+      lines.forEach(line => {
+          let match = line.match(/([0-9]+)X\\s*([WUBRGC]+)/);
+          if (match) {
+              const count = parseInt(match[1]);
+              const produces = match[2].split('');
+              for(let i=0; i<count; i++) deck.push({name: match[2], types:['Land'], produces});
+          }
+      });
+      while(deck.length < 99) deck.push({name:'Spell', types:['Spell'], produces:[]});
+      return deck;
+  }
 
   const runBtn = document.getElementById('runBtn');
-
   let workerUrl = null;
 
   runBtn.onclick = () => {
     if (workerUrl) URL.revokeObjectURL(workerUrl);
     workerUrl = URL.createObjectURL(new Blob([document.getElementById('worker-logic').textContent], {type: 'application/javascript'}));
 
-    const total = parseInt(document.getElementById('iterInput').value);
+    const totalIters = parseInt(document.getElementById('iterInput').value);
+    const targetStr = document.getElementById('targetInput').value;
+    const deckStr = document.getElementById('deckInput').value;
+    
+    const targetCost = parseTarget(targetStr);
+    const deckList = parseDeck(deckStr);
+
     const cores = navigator.hardwareConcurrency || 4;
-    const itersPer = Math.floor(total / cores);
+    const itersPer = Math.floor(totalIters / cores);
     let finished = 0;
-    let aggTurns = Array(9).fill(0);
-    let aggColors = { W:0, B:0, R:0, Any:0 };
-    let aggFail = { land: 0, w: 0, r: 0, b: 0 };
+    
+    // Aggregated turn data
+    let aggData = Array(9).fill(null).map(() => ({
+        successes: 0,
+        colorHits: Object.fromEntries(targetCost.colors.map(c => [c, 0])),
+        failReasons: { land: 0, ...Object.fromEntries(targetCost.colors.map(c => [c, 0])) }
+    }));
 
     document.getElementById('workerContainer').innerHTML = '';
-    document.getElementById('turnChart').innerHTML = '';
+    document.getElementById('turnsContainer').innerHTML = '';
     runBtn.disabled = true;
 
     for (let i = 0; i < cores; i++) {
       const div = document.createElement('div');
       div.className = 'worker-row';
-      div.innerHTML = `THREAD ${i+1}<div class="mini-progress"><div id="pb-${i}" class="mini-fill"></div></div>`;
+      div.innerHTML = \`THREAD \${i+1}<div class="mini-progress"><div id="pb-\${i}" class="mini-fill"></div></div>\`;
       document.getElementById('workerContainer').appendChild(div);
 
       const w = new Worker(workerUrl);
-      const iters = (i === cores-1) ? total - (itersPer*(cores-1)) : itersPer;
-      w.postMessage({ iterations: iters, deckList: createDeck() });
+      const iters = (i === cores-1) ? totalIters - (itersPer*(cores-1)) : itersPer;
+      w.postMessage({ iterations: iters, deckList, targetCost });
 
       w.onmessage = (e) => {
-        if (e.data.type === 'progress') document.getElementById(`pb-${i}`).style.width = e.data.percent + '%';
+        if (e.data.type === 'progress') document.getElementById(\`pb-\${i}\`).style.width = e.data.percent + '%';
         if (e.data.type === 'result') {
           finished++;
-          document.getElementById(`pb-${i}`).style.width = '100%';
-          // noinspection JSUnresolvedReference
-          e.data.turnSuccesses.forEach((val, idx) => aggTurns[idx] += val);
-          // noinspection JSUnresolvedReference
-          Object.keys(aggColors).forEach(k => aggColors[k] += e.data.colorHitsAtT4[k]);
-          // noinspection JSUnresolvedReference
-          Object.keys(aggFail).forEach(k => aggFail[k] += e.data.failReasons[k]);
+          document.getElementById(\`pb-\${i}\`).style.width = '100%';
+          
+          e.data.turnData.forEach((td, t) => {
+              if (t === 0) return;
+              aggData[t].successes += td.successes;
+              for (let c in td.colorHits) aggData[t].colorHits[c] += td.colorHits[c];
+              for (let f in td.failReasons) aggData[t].failReasons[f] += td.failReasons[f];
+          });
 
           w.terminate();
-          if (finished === cores) render(aggTurns, aggColors, total, aggFail);
+          if (finished === cores) render(aggData, totalIters, targetCost);
         }
       };
-
-      w.onerror = (err) => {
-        console.error(`Worker ${i} failed:`, err.message);
-        finished++;
-        document.getElementById(`pb-${i}`).style.width = '100%';
-        document.getElementById(`pb-${i}`).style.background = '#ff3131';
-        w.terminate();
-        if (finished === cores) {
-          if (aggTurns.some(v => v > 0)) render(aggTurns, aggColors, total);
-          else { runBtn.disabled = false; }
-        }
-      };    }
+    }
   };
 
-function render(turns, colors, total, failReasons) {
+function render(aggData, totalIters, targetCost) {
     runBtn.disabled = false;
-    document.getElementById('resSuccess').innerText = ((turns[4]/total)*100).toFixed(1) + '%';
+    const container = document.getElementById('turnsContainer');
+    
+    for (let t = 1; t <= 8; t++) {
+        const data = aggData[t];
+        const succPct = ((data.successes / totalIters) * 100).toFixed(1);
+        
+        // Build Wheel Svg
+        const colors = targetCost.colors;
+        const anglePerColor = 360 / Math.max(1, colors.length);
+        let wheelHtml = \`<svg class="wheel-svg" viewBox="0 0 100 100">\`;
+        let labelsHtml = \`\`;
+        
+        colors.forEach((c, idx) => {
+            const startAngle = idx * anglePerColor;
+            const endAngle = (idx + 1) * anglePerColor;
+            const hitPct = (data.colorHits[c] / totalIters) * 100;
+            const rFill = 45 * (hitPct / 100);
+            const colorCode = colorMap[c] || 'var(--any)';
+            
+            wheelHtml += \`
+                <path class="slice-bg" d="\${describeArc(50, 50, 45, startAngle, endAngle)}"/>
+                <path class="slice-fill" fill="\${colorCode}" d="\${describeArc(50, 50, rFill, startAngle, endAngle)}"/>
+                <path class="slice-outline" stroke="\${colorCode}" d="\${describeArc(50, 50, 45, startAngle, endAngle)}"/>
+            \`;
+            
+            // Label positioning
+            const midAngle = startAngle + (anglePerColor / 2);
+            const labelPos = polarToCartesian(50, 50, 58, midAngle);
+            labelsHtml += \`
+                <div class="label" style="top: \${labelPos.y}%; left: \${labelPos.x}%;">
+                    \${c} <span class="label-pct" style="color:\${colorCode}">\${hitPct.toFixed(0)}%</span>
+                </div>\`;
+        });
+        wheelHtml += \`</svg>\`;
 
-    const configs = [
-      { key: 'W', id: 'w', start: 180, end: 270 },
-      { key: 'R', id: 'r', start: 270, end: 360 },
-      { key: 'B', id: 'b', start: 0, end: 90 },
-      { key: 'Any', id: 'any', start: 90, end: 180 }
-    ];
+        // Build Waterfall
+        let waterfallHtml = '';
+        const f = data.failReasons;
+        const failCats = [{ label: 'Missing Lands', val: f.land, col: '#475569' }];
+        colors.forEach(c => failCats.push({ label: \`Missing \${c}\`, val: f[c], col: colorMap[c] }));
+        
+        failCats.forEach(cat => {
+            if (cat.val > 0) {
+                const pct = ((cat.val / totalIters) * 100).toFixed(1);
+                waterfallHtml += \`
+                    <div class="fail-row">
+                        <div class="fail-text"><span>\${cat.label}</span><span style="color:#ff3131">-\${pct}%</span></div>
+                        <div class="fail-bar-outer"><div class="fail-bar-inner" style="width:\${pct}%; background:\${cat.col}"></div></div>
+                    </div>\`;
+            }
+        });
 
-    configs.forEach(c => {
-      const pct = (colors[c.key] / total) * 100;
-      const rFill = 45 * (pct / 100);
-      document.getElementById(`bg-${c.id}`).setAttribute("d", describeArc(50, 50, 45, c.start, c.end));
-      document.getElementById(`out-${c.id}`).setAttribute("d", describeArc(50, 50, 45, c.start, c.end));
-      document.getElementById(`fill-${c.id}`).setAttribute("d", describeArc(50, 50, rFill, c.start, c.end));
-      document.getElementById(`pct-${c.id}`).innerText = pct.toFixed(1) + '%';
-    });
-
-    // RESTORED: Turn-by-Turn Casting Velocity Chart
-    const turnChart = document.getElementById('turnChart');
-    turnChart.innerHTML = '';
-    for(let t=1; t<=8; t++) {
-      const pct = (turns[t]/total)*100;
-      turnChart.innerHTML += `
-        <div class="turn-row">
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem">
-                <span>Turn ${t}</span><span>${pct.toFixed(1)}%</span>
+        const turnCard = document.createElement('div');
+        turnCard.className = 'turn-card';
+        turnCard.innerHTML = \`
+            <div class="turn-header">
+                <span>TURN \${t}</span>
+                <span>\${succPct}% CASTABLE</span>
             </div>
-            <div class="bar-outer">
-                <div class="bar-inner" style="width:${pct}%"></div>
+            <div class="bar-outer"><div class="bar-inner" style="width:\${succPct}%"></div></div>
+            <div class="turn-details">
+                <div class="wheel-container">
+                    \${wheelHtml}
+                    <div class="wheel-labels">\${labelsHtml}</div>
+                </div>
+                <div class="failure-section">
+                    <h4 style="margin:0 0 10px 0; color:#ff3131">FAILURE ATTRIBUTION</h4>
+                    \${waterfallHtml || '<div style="font-size:0.9rem; color:#94a3b8">No significant failures recorded.</div>'}
+                </div>
             </div>
-        </div>`;
+        \`;
+        container.appendChild(turnCard);
     }
-
-    // Failure Attribution Logic
-    const failChart = document.getElementById('failureWaterfall');
-    if (!failChart) return;
-    failChart.innerHTML = '';
-
-    const categories = [
-      { label: 'Missing 4th Land', val: failReasons.land, color: '#475569' },
-      { label: 'Missing White', val: failReasons.w, color: 'var(--white)' },
-      { label: 'Missing Red', val: failReasons.r, color: 'var(--red)' },
-      { label: 'Missing Black', val: failReasons.b, color: 'var(--black)' }
-    ];
-
-    categories.forEach(c => {
-      const pct = (c.val / total) * 100;
-      if (pct === 0) return; // Don't show 0% failures
-
-      failChart.innerHTML += `
-            <div class="turn-row">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.8rem">
-                    <span>${c.label}</span><span style="color:#ff3131">-${pct.toFixed(1)}%</span>
-                </div>
-                <div class="bar-outer">
-                    <div class="bar-inner" style="width:${pct}%; background:${c.color}; opacity:0.6"></div>
-                </div>
-            </div>`;
-    });
-  }
+}
 </script>
 </body>
 </html>

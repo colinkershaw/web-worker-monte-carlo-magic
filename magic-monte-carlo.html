@@ -168,7 +168,7 @@
     const end = polarToCartesian(x, y, r, startAngle);
     // Handle full circle
     if (Math.abs(endAngle - startAngle) >= 360) {
-        return \`M \${x} \${y-r} A \${r} \${r} 0 1 1 \${x} \${y+r} A \${r} \${r} 0 1 1 \${x} \${y-r} Z\`;
+        return `M ${x} ${y-r} A ${r} ${r} 0 1 1 ${x} ${y+r} A ${r} ${r} 0 1 1 ${x} ${y-r} Z`;
     }
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
     return ["M", x, y, "L", start.x, start.y, "A", r, r, 0, largeArcFlag, 0, end.x, end.y, "L", x, y, "Z"].join(" ");
@@ -192,9 +192,9 @@
 
   function parseDeck(str) {
       const deck = [];
-      const lines = str.toUpperCase().split('\\n');
+      const lines = str.toUpperCase().split('\n');
       lines.forEach(line => {
-          let match = line.match(/([0-9]+)X\\s*([WUBRGC]+)/);
+          let match = line.match(/([0-9]+)X\s*([WUBRGC]+)/);
           if (match) {
               const count = parseInt(match[1]);
               const produces = match[2].split('');
@@ -237,7 +237,7 @@
     for (let i = 0; i < cores; i++) {
       const div = document.createElement('div');
       div.className = 'worker-row';
-      div.innerHTML = \`THREAD \${i+1}<div class="mini-progress"><div id="pb-\${i}" class="mini-fill"></div></div>\`;
+      div.innerHTML = `THREAD ${i+1}<div class="mini-progress"><div id="pb-${i}" class="mini-fill"></div></div>`;
       document.getElementById('workerContainer').appendChild(div);
 
       const w = new Worker(workerUrl);
@@ -245,10 +245,10 @@
       w.postMessage({ iterations: iters, deckList, targetCost });
 
       w.onmessage = (e) => {
-        if (e.data.type === 'progress') document.getElementById(\`pb-\${i}\`).style.width = e.data.percent + '%';
+        if (e.data.type === 'progress') document.getElementById(`pb-${i}`).style.width = e.data.percent + '%';
         if (e.data.type === 'result') {
           finished++;
-          document.getElementById(\`pb-\${i}\`).style.width = '100%';
+          document.getElementById(`pb-${i}`).style.width = '100%';
           
           e.data.turnData.forEach((td, t) => {
               if (t === 0) return;
@@ -275,8 +275,8 @@ function render(aggData, totalIters, targetCost) {
         // Build Wheel Svg
         const colors = targetCost.colors;
         const anglePerColor = 360 / Math.max(1, colors.length);
-        let wheelHtml = \`<svg class="wheel-svg" viewBox="0 0 100 100">\`;
-        let labelsHtml = \`\`;
+        let wheelHtml = `<svg class="wheel-svg" viewBox="0 0 100 100">`;
+        let labelsHtml = ``;
         
         colors.forEach((c, idx) => {
             const startAngle = idx * anglePerColor;
@@ -285,58 +285,58 @@ function render(aggData, totalIters, targetCost) {
             const rFill = 45 * (hitPct / 100);
             const colorCode = colorMap[c] || 'var(--any)';
             
-            wheelHtml += \`
-                <path class="slice-bg" d="\${describeArc(50, 50, 45, startAngle, endAngle)}"/>
-                <path class="slice-fill" fill="\${colorCode}" d="\${describeArc(50, 50, rFill, startAngle, endAngle)}"/>
-                <path class="slice-outline" stroke="\${colorCode}" d="\${describeArc(50, 50, 45, startAngle, endAngle)}"/>
-            \`;
+            wheelHtml += `
+                <path class="slice-bg" d="${describeArc(50, 50, 45, startAngle, endAngle)}"/>
+                <path class="slice-fill" fill="${colorCode}" d="${describeArc(50, 50, rFill, startAngle, endAngle)}"/>
+                <path class="slice-outline" stroke="${colorCode}" d="${describeArc(50, 50, 45, startAngle, endAngle)}"/>
+            `;
             
             // Label positioning
             const midAngle = startAngle + (anglePerColor / 2);
             const labelPos = polarToCartesian(50, 50, 58, midAngle);
-            labelsHtml += \`
-                <div class="label" style="top: \${labelPos.y}%; left: \${labelPos.x}%;">
-                    \${c} <span class="label-pct" style="color:\${colorCode}">\${hitPct.toFixed(0)}%</span>
-                </div>\`;
+            labelsHtml += `
+                <div class="label" style="top: ${labelPos.y}%; left: ${labelPos.x}%;">
+                    ${c} <span class="label-pct" style="color:${colorCode}">${hitPct.toFixed(0)}%</span>
+                </div>`;
         });
-        wheelHtml += \`</svg>\`;
+        wheelHtml += `</svg>`;
 
         // Build Waterfall
         let waterfallHtml = '';
         const f = data.failReasons;
         const failCats = [{ label: 'Missing Lands', val: f.land, col: '#475569' }];
-        colors.forEach(c => failCats.push({ label: \`Missing \${c}\`, val: f[c], col: colorMap[c] }));
+        colors.forEach(c => failCats.push({ label: `Missing ${c}`, val: f[c], col: colorMap[c] }));
         
         failCats.forEach(cat => {
             if (cat.val > 0) {
                 const pct = ((cat.val / totalIters) * 100).toFixed(1);
-                waterfallHtml += \`
+                waterfallHtml += `
                     <div class="fail-row">
-                        <div class="fail-text"><span>\${cat.label}</span><span style="color:#ff3131">-\${pct}%</span></div>
-                        <div class="fail-bar-outer"><div class="fail-bar-inner" style="width:\${pct}%; background:\${cat.col}"></div></div>
-                    </div>\`;
+                        <div class="fail-text"><span>${cat.label}</span><span style="color:#ff3131">-${pct}%</span></div>
+                        <div class="fail-bar-outer"><div class="fail-bar-inner" style="width:${pct}%; background:${cat.col}"></div></div>
+                    </div>`;
             }
         });
 
         const turnCard = document.createElement('div');
         turnCard.className = 'turn-card';
-        turnCard.innerHTML = \`
+        turnCard.innerHTML = `
             <div class="turn-header">
-                <span>TURN \${t}</span>
-                <span>\${succPct}% CASTABLE</span>
+                <span>TURN ${t}</span>
+                <span>${succPct}% CASTABLE</span>
             </div>
-            <div class="bar-outer"><div class="bar-inner" style="width:\${succPct}%"></div></div>
+            <div class="bar-outer"><div class="bar-inner" style="width:${succPct}%"></div></div>
             <div class="turn-details">
                 <div class="wheel-container">
-                    \${wheelHtml}
-                    <div class="wheel-labels">\${labelsHtml}</div>
+                    ${wheelHtml}
+                    <div class="wheel-labels">${labelsHtml}</div>
                 </div>
                 <div class="failure-section">
                     <h4 style="margin:0 0 10px 0; color:#ff3131">FAILURE ATTRIBUTION</h4>
-                    \${waterfallHtml || '<div style="font-size:0.9rem; color:#94a3b8">No significant failures recorded.</div>'}
+                    ${waterfallHtml || '<div style="font-size:0.9rem; color:#94a3b8">No significant failures recorded.</div>'}
                 </div>
             </div>
-        \`;
+        `;
         container.appendChild(turnCard);
     }
 }

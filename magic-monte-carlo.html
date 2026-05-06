@@ -7,77 +7,79 @@
     <style>
         :root {
             --accent: #00e5ff; --any: #94a3b8; --white: #ffffff;
-            --black: #000000; --red: #ff3131; --blue: #3b82f6; --green: #22c55e;
+            --black: #000000; --red: #ef4444; --blue: #3b82f6; --green: #22c55e;
             --bg: #0f172a; --card: #1e293b;
         }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: #f1f5f9; padding: 2rem; }
         .container { max-width: 1200px; margin: 0 auto; }
         .header { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
         .title-row { display: flex; justify-content: space-between; align-items: center; }
-        .controls { display: grid; grid-template-columns: auto 1fr 1fr 1fr auto; gap: 1rem; background: var(--card); padding: 1rem; border-radius: 12px; border: 1px solid #334155; align-items: end; }
+        
+        /* Enlarged Controls */
+        .controls { display: grid; grid-template-columns: auto 1fr 1fr 1fr auto; gap: 1.5rem; background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid #334155; align-items: end; }
         .control-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        input, textarea { background: #0f172a; border: 1px solid #475569; color: white; padding: 8px; border-radius: 6px; }
-        textarea { resize: vertical; font-family: monospace; }
-        button.action-btn { background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; height: fit-content; align-self: end; }
+        label { font-size: 1.1rem; font-weight: 500; color: #cbd5e1; }
+        input, textarea { 
+            background: #0f172a; border: 1px solid #475569; color: white; 
+            padding: 12px; border-radius: 8px; font-size: 1.2rem; font-weight: 600;
+        }
+        textarea { resize: vertical; font-family: monospace; font-size: 1.1rem; }
+        button.action-btn { background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: bold; height: fit-content; align-self: end; }
         
         /* Deck Size Selector Styles */
-        .deck-size-group { display: flex; gap: 12px; align-items: end; padding-bottom: 4px; }
+        .deck-size-group { display: flex; gap: 12px; align-items: end; }
         .deck-btn {
             position: relative;
-            width: 42px; height: 56px;
-            background: #0f172a;
-            border: 2px solid #475569;
-            border-radius: 4px;
-            color: #94a3b8;
-            font-weight: 800;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
+            width: 48px; height: 64px;
+            background: #0f172a; border: 2px solid #475569; border-radius: 6px;
+            color: #94a3b8; font-weight: 800; font-size: 1rem;
+            cursor: pointer; transition: all 0.2s;
             display: flex; align-items: center; justify-content: center;
         }
         .deck-btn::before, .deck-btn::after {
             content: ''; position: absolute;
-            background: #0f172a; border: 1px solid #475569; border-radius: 3px;
+            background: #0f172a; border: 1px solid #475569; border-radius: 4px;
             z-index: -1; transition: all 0.2s;
         }
-        .deck-btn::before { top: -4px; left: 2px; right: -4px; bottom: 2px; }
-        .deck-btn::after { top: -8px; left: 4px; right: -6px; bottom: 6px; }
-        
-        .deck-btn.active {
-            border-color: var(--accent); color: var(--accent);
-            box-shadow: 0 0 10px rgba(0, 229, 255, 0.2) inset;
-        }
+        .deck-btn::before { top: -5px; left: 3px; right: -5px; bottom: 3px; }
+        .deck-btn::after { top: -10px; left: 6px; right: -8px; bottom: 8px; }
+        .deck-btn.active { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 12px rgba(0, 229, 255, 0.2) inset; }
         .deck-btn.active::before, .deck-btn.active::after { border-color: var(--accent); }
 
         /* Multi-Thread Visuals */
         #workerContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 2rem; }
-        .worker-row { background: var(--card); padding: 10px; border-radius: 8px; border: 1px solid #334155; font-size: 0.7rem; }
-        .mini-progress { height: 4px; background: #0f172a; border-radius: 2px; overflow: hidden; margin-top: 5px; }
+        .worker-row { background: var(--card); padding: 10px; border-radius: 8px; border: 1px solid #334155; font-size: 0.75rem; font-weight: bold; }
+        .mini-progress { height: 6px; background: #0f172a; border-radius: 3px; overflow: hidden; margin-top: 6px; }
         .mini-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; box-shadow: 0 0 8px var(--accent); }
 
         .turns-container { display: flex; flex-direction: column; gap: 2rem; }
         .turn-card { background: var(--card); padding: 2rem; border-radius: 16px; border: 1px solid #334155; }
-        .turn-header { display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 1.2rem; font-weight: bold; color: var(--accent); }
-        .bar-outer { background: #0f172a; height: 20px; border-radius: 10px; overflow: hidden; border: 1px solid #334155; margin-bottom: 2rem; }
+        .turn-header { display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 1.3rem; font-weight: bold; color: var(--accent); }
+        .bar-outer { background: #0f172a; height: 24px; border-radius: 12px; overflow: hidden; border: 1px solid #334155; margin-bottom: 2rem; }
         .bar-inner { height: 100%; background: linear-gradient(90deg, #3a7bd5, #00e5ff); width: 0%; transition: width 0.8s; }
         
-        .turn-details { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; }
+        .turn-details { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; }
+        
+        /* Light Panels for contrast against Black Mana */
+        .light-panel { background: #e2e8f0; border-radius: 16px; padding: 1.5rem; color: #0f172a; border: 1px solid #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+        .wheel-panel { display: flex; align-items: center; justify-content: center; position: relative; }
         
         /* Wheel Styles */
-        .wheel-container { position: relative; width: 250px; height: 250px; margin: 0 auto; }
+        .wheel-container { position: relative; width: 260px; height: 260px; margin: 0 auto; }
         .wheel-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-        .slice-bg { fill: rgba(255, 255, 255, 0.05); stroke: #334155; stroke-width: 0.5; }
-        .slice-fill { transition: d 0.5s ease-out; opacity: 0.9; }
-        .slice-outline { fill: none; stroke-width: 2; }
+        .slice-bg { fill: rgba(0, 0, 0, 0.05); stroke: #94a3b8; stroke-width: 0.5; }
+        .slice-fill { transition: d 0.5s ease-out; opacity: 0.95; }
+        .slice-outline { fill: none; stroke-width: 1.5; stroke: #94a3b8; }
         
         .wheel-labels { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .label { position: absolute; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; transform: translate(-50%, -50%); }
-        .label-pct { display: block; color: var(--accent); font-size: 1.1rem; }
+        .label { position: absolute; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; transform: translate(-50%, -50%); text-align: center; }
+        .label-pct { display: block; font-size: 1.2rem; font-weight: 900; }
 
-        .failure-section { display: flex; flex-direction: column; gap: 0.8rem; justify-content: center; }
-        .fail-row { display: flex; flex-direction: column; gap: 0.2rem; }
-        .fail-text { display: flex; justify-content: space-between; font-size: 0.85rem; }
-        .fail-bar-outer { background: #0f172a; height: 8px; border-radius: 4px; overflow: hidden; }
+        .failure-section { display: flex; flex-direction: column; gap: 1rem; justify-content: center; }
+        .fail-row { display: flex; flex-direction: column; gap: 0.4rem; }
+        .fail-text { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 600; }
+        .fail-text span:last-child { color: #dc2626; } /* Red for minus percentage */
+        .fail-bar-outer { background: #cbd5e1; height: 10px; border-radius: 5px; overflow: hidden; }
         .fail-bar-inner { height: 100%; background: #ff3131; width: 0%; }
     </style>
 </head>
@@ -90,7 +92,7 @@
         </div>
         <div class="controls">
             <div class="control-group">
-                <label style="margin-bottom: 8px;">Format</label>
+                <label style="margin-bottom: 4px;">Format</label>
                 <div class="deck-size-group">
                     <button class="deck-btn" data-size="60" onclick="setDeckSize(60)">60</button>
                     <button class="deck-btn active" data-size="100" onclick="setDeckSize(100)">100</button>
@@ -110,7 +112,7 @@
             </div>
             <div class="control-group">
                 <label for="iterInput">Iterations</label>
-                <input id="iterInput" type="number" value="100000">
+                <input id="iterInput" type="number" value="1000000">
             </div>
             <button id="runBtn" class="action-btn">INITIATE ENGINE</button>
         </div>
@@ -122,15 +124,7 @@
 
 <!-- SHARED MANA LOGIC FOR MAIN THREAD (TESTING) AND WORKER -->
 <script id="mana-logic" type="text/javascript">
-    /**
-     * Determines if a set of lands can pay a specific mana cost.
-     * Uses recursive backtracking to handle dual/tri lands correctly.
-     * @param {Array<Array<string>>} lands - Array of arrays, e.g., [['W'], ['W','U'], ['W','U','B','R','G']]
-     * @param {Array<string>} targetColors - e.g., ['W', 'W', 'U']
-     * @param {number} targetGeneric - e.g., 2
-     */
     function canPay(lands, targetColors, targetGeneric) {
-        // If we have satisfied all colored pips, check if remaining lands can cover generic
         if (targetColors.length === 0) {
             return lands.length >= targetGeneric;
         }
@@ -138,13 +132,9 @@
         const colorNeeded = targetColors[0];
         const remainingColors = targetColors.slice(1);
         
-        // Try to pay the current colored pip with each available land
         for (let i = 0; i < lands.length; i++) {
             if (lands[i].includes(colorNeeded) || lands[i].includes('Any')) {
-                // Create a new array without the land we just used
                 const remainingLands = lands.filter((_, idx) => idx !== i);
-                
-                // Recurse to see if the rest of the cost can be paid
                 if (canPay(remainingLands, remainingColors, targetGeneric)) {
                     return true;
                 }
@@ -156,16 +146,25 @@
     function parseTargetCost(str) {
         let tokens = str.toUpperCase().match(/([0-9]+|[WUBRGC])/g) || [];
         let generic = 0;
-        let colors = [];
-        let uniqueColors = new Set();
+        let req = {};
+        
         tokens.forEach(t => {
             if (!isNaN(parseInt(t))) generic += parseInt(t);
-            else {
-                colors.push(t);
-                uniqueColors.add(t);
-            }
+            else req[t] = (req[t] || 0) + 1;
         });
-        return { generic, colors, uniqueColors: Array.from(uniqueColors), total: generic + colors.length };
+        
+        let pieCategories = [];
+        if (generic > 0) pieCategories.push({ id: 'Any', label: 'Any', req: generic });
+        for (let c in req) pieCategories.push({ id: c, label: c, req: req[c] });
+        
+        let total = generic;
+        let colors = [];
+        for (let c in req) {
+            total += req[c];
+            for(let i=0; i<req[c]; i++) colors.push(c);
+        }
+        
+        return { generic, colors, pieCategories, total };
     }
 </script>
 
@@ -173,11 +172,15 @@
     self.onmessage = function(e) {
         const { iterations, deckList, targetCost } = e.data;
         
-        let turnData = Array(9).fill(null).map(() => ({
-            successes: 0,
-            colorHits: Object.fromEntries(targetCost.uniqueColors.map(c => [c, 0])),
-            failReasons: { land: 0, ...Object.fromEntries(targetCost.uniqueColors.map(c => [c, 0])) }
-        }));
+        let turnData = Array(9).fill(null).map(() => {
+            let hits = {};
+            let fails = { land: 0 };
+            targetCost.pieCategories.forEach(cat => {
+                hits[cat.id] = 0;
+                fails[cat.id] = 0;
+            });
+            return { successes: 0, colorHits: hits, failReasons: fails };
+        });
 
         function shuffle(arr) {
             for (let i = arr.length - 1; i > 0; i--) {
@@ -203,18 +206,22 @@
 
                 if (successFound) {
                     turnData[t].successes++;
-                    targetCost.uniqueColors.forEach(c => turnData[t].colorHits[c]++);
+                    targetCost.pieCategories.forEach(cat => turnData[t].colorHits[cat.id]++);
                     continue;
                 }
 
                 const hasEnoughLands = landsOnBoard.length >= targetCost.total;
                 const canCast = canPay(landsOnBoard, targetCost.colors, targetCost.generic);
 
-                // Track partial hits for pie chart (greedy estimation just for visual tracking)
-                let greedyPool = new Set();
-                landsOnBoard.forEach(l => l.forEach(c => greedyPool.add(c)));
-                targetCost.uniqueColors.forEach(c => {
-                    if (greedyPool.has(c)) turnData[t].colorHits[c]++;
+                // Greedy Tracking for Pie Chart visualization
+                targetCost.pieCategories.forEach(cat => {
+                    if (cat.id === 'Any') {
+                        if (hasEnoughLands) turnData[t].colorHits[cat.id]++;
+                    } else {
+                        if (landsOnBoard.filter(l => l.includes(cat.id) || l.includes('Any')).length >= cat.req) {
+                            turnData[t].colorHits[cat.id]++;
+                        }
+                    }
                 });
 
                 if (canCast) {
@@ -224,10 +231,12 @@
                     if (!hasEnoughLands) {
                         turnData[t].failReasons.land++;
                     } else {
-                        // Estimate missing color for waterfall
-                        targetCost.uniqueColors.forEach(c => {
-                            if (!greedyPool.has(c)) turnData[t].failReasons[c]++;
+                        let missingCat = targetCost.pieCategories.find(cat => {
+                            if (cat.id === 'Any') return false;
+                            return landsOnBoard.filter(l => l.includes(cat.id) || l.includes('Any')).length < cat.req;
                         });
+                        if (missingCat) turnData[t].failReasons[missingCat.id]++;
+                        else turnData[t].failReasons[targetCost.pieCategories.find(c => c.id !== 'Any')?.id || 'land']++;
                     }
                 }
             }
@@ -248,7 +257,6 @@
       });
   }
 
-  // TDD Test Suite (Runs only via console)
   window.runTests = function() {
       console.log("%c Running Mana Logic Tests...", "color: #00e5ff; font-weight: bold; font-size: 14px;");
       let passed = 0, failed = 0;
@@ -257,14 +265,10 @@
           else { console.error("❌ " + name); failed++; }
       }
       
-      // Test 1: Schrödinger's Mana Bug
       assert("1 Command Tower cannot pay W U", !canPay([['W','U','B','R','G']], ['W','U'], 0));
-      // Test 2: Multiple Pips Bug
       assert("1 Plains, 1 Island cannot pay W W U", !canPay([['W'],['U']], ['W','W','U'], 0));
-      // Test 3: Complex Bipartite Matching
       assert("Azorius Chancery, Dimir Aqueduct, Plains CAN pay W U B", canPay([['W','U'],['U','B'],['W']], ['W','U','B'], 0));
       assert("Azorius Chancery, Dimir Aqueduct CANNOT pay W U B", !canPay([['W','U'],['U','B']], ['W','U','B'], 0));
-      // Test 4: Generic Costs
       assert("Overpaying generic cost works", canPay([['W'],['U'],['B']], ['W'], 1));
       assert("Colorless counts as generic", canPay([['C'],['W']], ['W'], 1));
       
@@ -287,7 +291,7 @@
     return ["M", x, y, "L", start.x, start.y, "A", r, r, 0, largeArcFlag, 0, end.x, end.y, "L", x, y, "Z"].join(" ");
   }
 
-  const colorMap = { 'W': 'var(--white)', 'U': 'var(--blue)', 'B': 'var(--black)', 'R': 'var(--red)', 'G': 'var(--green)', 'C': 'var(--any)' };
+  const colorMap = { 'W': '#ffffff', 'U': '#3b82f6', 'B': '#000000', 'R': '#ef4444', 'G': '#22c55e', 'Any': '#94a3b8' };
 
   function parseDeck(str, totalSize) {
       const deck = [];
@@ -300,7 +304,7 @@
               for(let i=0; i<count; i++) deck.push({name: match[2], types:['Land'], produces});
           }
       });
-      while(deck.length < totalSize - 1) deck.push({name:'Spell', types:['Spell'], produces:[]}); // -1 for Commander usually, roughly pads correctly
+      while(deck.length < totalSize - 1) deck.push({name:'Spell', types:['Spell'], produces:[]});
       return deck;
   }
 
@@ -310,7 +314,6 @@
   runBtn.onclick = () => {
     if (workerUrl) URL.revokeObjectURL(workerUrl);
     
-    // Inject the shared logic into the worker script
     const sharedLogic = document.getElementById('mana-logic').textContent;
     const workerLogic = document.getElementById('worker-logic').textContent;
     workerUrl = URL.createObjectURL(new Blob([sharedLogic + '\n' + workerLogic], {type: 'application/javascript'}));
@@ -326,11 +329,12 @@
     const itersPer = Math.floor(totalIters / cores);
     let finished = 0;
     
-    let aggData = Array(9).fill(null).map(() => ({
-        successes: 0,
-        colorHits: Object.fromEntries(targetCost.uniqueColors.map(c => [c, 0])),
-        failReasons: { land: 0, ...Object.fromEntries(targetCost.uniqueColors.map(c => [c, 0])) }
-    }));
+    let aggData = Array(9).fill(null).map(() => {
+        let hits = {};
+        let fails = { land: 0 };
+        targetCost.pieCategories.forEach(cat => { hits[cat.id] = 0; fails[cat.id] = 0; });
+        return { successes: 0, colorHits: hits, failReasons: fails };
+    });
 
     document.getElementById('workerContainer').innerHTML = '';
     document.getElementById('turnsContainer').innerHTML = '';
@@ -374,46 +378,55 @@ function render(aggData, totalIters, targetCost) {
         const data = aggData[t];
         const succPct = ((data.successes / totalIters) * 100).toFixed(1);
         
-        const colors = targetCost.uniqueColors;
-        const anglePerColor = 360 / Math.max(1, colors.length);
         let wheelHtml = `<svg class="wheel-svg" viewBox="0 0 100 100">`;
         let labelsHtml = ``;
         
-        colors.forEach((c, idx) => {
-            const startAngle = idx * anglePerColor;
-            const endAngle = (idx + 1) * anglePerColor;
-            const hitPct = (data.colorHits[c] / totalIters) * 100;
+        let currentAngle = 0;
+        const totalReq = targetCost.total;
+        
+        targetCost.pieCategories.forEach(cat => {
+            const sweepAngle = (cat.req / totalReq) * 360;
+            const startAngle = currentAngle;
+            const endAngle = currentAngle + sweepAngle;
+            currentAngle += sweepAngle;
             
-            // FIX: Use square root of percentage to correctly scale area of the pie slice
+            const hitPct = (data.colorHits[cat.id] / totalIters) * 100;
             const rFill = 45 * Math.sqrt(hitPct / 100);
-            const colorCode = colorMap[c] || 'var(--any)';
+            const colorCode = colorMap[cat.id] || '#94a3b8';
             
             wheelHtml += `
                 <path class="slice-bg" d="${describeArc(50, 50, 45, startAngle, endAngle)}"/>
                 <path class="slice-fill" fill="${colorCode}" d="${describeArc(50, 50, rFill, startAngle, endAngle)}"/>
-                <path class="slice-outline" stroke="${colorCode}" d="${describeArc(50, 50, 45, startAngle, endAngle)}"/>
+                <path class="slice-outline" stroke="#64748b" d="${describeArc(50, 50, 45, startAngle, endAngle)}"/>
             `;
             
-            const midAngle = startAngle + (anglePerColor / 2);
-            const labelPos = polarToCartesian(50, 50, 58, midAngle);
+            const midAngle = startAngle + (sweepAngle / 2);
+            // Subtract 90 degrees to align the HTML label with the SVG which is rotated -90deg
+            const labelPos = polarToCartesian(50, 50, 68, midAngle - 90);
+            
+            // Format label percentage color for visibility against the light panel
+            const pctColor = colorCode === '#ffffff' ? '#475569' : colorCode;
+
             labelsHtml += `
                 <div class="label" style="top: ${labelPos.y}%; left: ${labelPos.x}%;">
-                    ${c} <span class="label-pct" style="color:${colorCode}">${hitPct.toFixed(0)}%</span>
+                    ${cat.label} <span class="label-pct" style="color:${pctColor}">${hitPct.toFixed(0)}%</span>
                 </div>`;
         });
         wheelHtml += `</svg>`;
 
         let waterfallHtml = '';
         const f = data.failReasons;
-        const failCats = [{ label: 'Missing Lands', val: f.land, col: '#475569' }];
-        colors.forEach(c => failCats.push({ label: `Missing ${c}`, val: f[c], col: colorMap[c] }));
+        const failCats = [{ label: 'Missing Lands', val: f.land, col: '#64748b' }];
+        targetCost.pieCategories.forEach(cat => {
+            if (cat.id !== 'Any') failCats.push({ label: `Missing ${cat.label}`, val: f[cat.id], col: colorMap[cat.id] });
+        });
         
         failCats.forEach(cat => {
             if (cat.val > 0) {
                 const pct = ((cat.val / totalIters) * 100).toFixed(1);
                 waterfallHtml += `
                     <div class="fail-row">
-                        <div class="fail-text"><span>${cat.label}</span><span style="color:#ff3131">-${pct}%</span></div>
+                        <div class="fail-text"><span>${cat.label}</span><span>-${pct}%</span></div>
                         <div class="fail-bar-outer"><div class="fail-bar-inner" style="width:${pct}%; background:${cat.col}"></div></div>
                     </div>`;
             }
@@ -428,13 +441,15 @@ function render(aggData, totalIters, targetCost) {
             </div>
             <div class="bar-outer"><div class="bar-inner" style="width:${succPct}%"></div></div>
             <div class="turn-details">
-                <div class="wheel-container">
-                    ${wheelHtml}
-                    <div class="wheel-labels">${labelsHtml}</div>
+                <div class="light-panel wheel-panel">
+                    <div class="wheel-container">
+                        ${wheelHtml}
+                        <div class="wheel-labels">${labelsHtml}</div>
+                    </div>
                 </div>
-                <div class="failure-section">
-                    <h4 style="margin:0 0 10px 0; color:#ff3131">FAILURE ATTRIBUTION</h4>
-                    ${waterfallHtml || '<div style="font-size:0.9rem; color:#94a3b8">No significant failures recorded.</div>'}
+                <div class="light-panel failure-section">
+                    <h4 style="margin:0 0 10px 0; color:#0f172a; font-weight: 800;">FAILURE ATTRIBUTION</h4>
+                    ${waterfallHtml || '<div style="font-size:1rem; font-weight:600; color:#64748b">No significant failures recorded.</div>'}
                 </div>
             </div>
         `;

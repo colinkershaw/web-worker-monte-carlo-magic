@@ -121,6 +121,7 @@
 
                 if (successFound) {
                     turnData[t].successes++;
+                    targetCost.colors.forEach(c => turnData[t].colorHits[c]++);
                     continue;
                 }
 
@@ -135,12 +136,10 @@
                 
                 const hasEnoughLands = landsOnBoard >= targetCost.total;
 
-                // Track hits for pie chart (only for target colors)
-                if (hasEnoughLands) {
-                    targetCost.colors.forEach(c => {
-                        if (colorsAvailable.has(c)) turnData[t].colorHits[c]++;
-                    });
-                }
+                // Track hits for pie chart
+                targetCost.colors.forEach(c => {
+                    if (colorsAvailable.has(c)) turnData[t].colorHits[c]++;
+                });
 
                 if (hasAllColors && hasEnoughLands) {
                     turnData[t].successes++;
